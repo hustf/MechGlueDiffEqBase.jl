@@ -3,6 +3,10 @@ uuid = "2532746b-52b5-4539-9431-8bb183ab067f"
 authors = ["hustf <hustf@users.noreply.github.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
+MechanicalUnits = "e6be9192-89dc-11e9-36e6-5dbcb28f419e"
+
 [compat]
 julia = "1"
 
