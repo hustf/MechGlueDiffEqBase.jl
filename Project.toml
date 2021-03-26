@@ -8,6 +8,7 @@ DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
 MechanicalUnits = "e6be9192-89dc-11e9-36e6-5dbcb28f419e"
 
 [compat]
+DiffEqBase = "6.57"
 julia = "1"
 
 [extras]
