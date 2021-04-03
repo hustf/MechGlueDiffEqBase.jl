@@ -1,11 +1,12 @@
 name = "MechGlueDiffEqBase"
 uuid = "2532746b-52b5-4539-9431-8bb183ab067f"
 authors = ["hustf <hustf@users.noreply.github.com> and contributors"]
-version = "0.1.3"
+version = "0.1.31"
 
 [deps]
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
 MechanicalUnits = "e6be9192-89dc-11e9-36e6-5dbcb28f419e"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 Unitfu = "5ee08b94-2369-4f4a-b8c7-99333ba35fb0"
 
