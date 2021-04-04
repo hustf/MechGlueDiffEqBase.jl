@@ -1,5 +1,6 @@
 [deps]
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 MechGlueDiffEqBase = "2532746b-52b5-4539-9431-8bb183ab067f"
+MechGluePlots = "03a24088-0a82-4850-846f-2cad5d056ae1"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
