@@ -11,6 +11,7 @@ SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 Unitfu = "5ee08b94-2369-4f4a-b8c7-99333ba35fb0"
 
 [compat]
+DiffEqBase = "6.60"
 julia = "1"
 
 [extras]
