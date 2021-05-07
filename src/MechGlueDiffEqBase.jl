@@ -6,6 +6,8 @@ using RecursiveArrayTools
 export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantity
 export norm, ArrayPartition
 
+Base.zero(A::ArrayPartition{<:AbstractQuantity{T},S}) where {T<:Number,S} = zero.(A)
+
 # This is identical to what DiffEqBase defines for Unitful
 function value(x::Type{AbstractQuantity{T,D,U}}) where {T,D,U}
     T
