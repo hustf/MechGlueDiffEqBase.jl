@@ -9,6 +9,7 @@ RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 Unitfu = "5ee08b94-2369-4f4a-b8c7-99333ba35fb0"
 
 [compat]
+DiffEqBase = "6.61"
 julia = "1"
 
 [extras]
