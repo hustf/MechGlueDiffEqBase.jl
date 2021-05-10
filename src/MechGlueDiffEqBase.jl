@@ -1,12 +1,10 @@
 module MechGlueDiffEqBase
-import Unitfu: AbstractQuantity, Quantity, ustrip, norm
+import Unitfu: AbstractQuantity, Quantity, ustrip, norm, unit
 import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2, zero
 import DiffEqBase: calculate_residuals, @muladd
 using RecursiveArrayTools
 export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantity
-export norm, ArrayPartition
-
-Base.zero(A::ArrayPartition{<:AbstractQuantity{T},S}) where {T<:Number,S} = zero.(A)
+export norm , ArrayPartition # Probably no longer necessary with changes in Unitfu 1.7.7. We could perhaps drop this depencency.
 
 # This is identical to what DiffEqBase defines for Unitful
 function value(x::Type{AbstractQuantity{T,D,U}}) where {T,D,U}
@@ -26,14 +24,25 @@ end
 @inline function ODE_DEFAULT_NORM(u::Array{<:AbstractQuantity,N},t) where {N}
     sqrt(sum(x->ODE_DEFAULT_NORM(x[1],x[2]),zip((value(x) for x in u),Iterators.repeated(t))) / length(u))
 end
-
 # This is identical to what DiffEqBase defines for Unitful
-
 @inline function ODE_DEFAULT_NORM(u::AbstractQuantity, t)
     abs(ustrip(u))
 end
-# This is slightly different from what  DiffEqBase defines for Unitful
-@inline function UNITLESS_ABS2(x::AbstractQuantity)
-    real(abs2(x) / (oneunit(x)^2))
+
+@inline function UNITLESS_ABS2(u::AbstractArray{<:AbstractQuantity,N} where N)
+    map(UNITLESS_ABS2, u)
 end
+@inline function UNITLESS_ABS2(u::AbstractArray{Quantity{T},N}) where {N, T}
+    map(UNITLESS_ABS2, u)
+end
+
+@inline function UNITLESS_ABS2(x::T) where T <: AbstractQuantity
+    xul = x / oneunit(T)
+    abs2(xul)
+end
+@inline function UNITLESS_ABS2(x::Quantity{T, D, U}) where {T, D, U}
+    xul = x / oneunit(Quantity{T, D, U})
+    abs2(xul)::T
+end
+
 end

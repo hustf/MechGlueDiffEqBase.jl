@@ -4,7 +4,10 @@ using MechGlueDiffEqBase
 using MechanicalUnits: @import_expand, dimension, NoDims, ∙
 import MechanicalUnits: g, g⁻¹
 @import_expand(km, N, s, m, km, kg, °, inch)
-using DiffEqBase, OrdinaryDiffEq # Unitfu,
+using DiffEqBase, OrdinaryDiffEq
+using OrdinaryDiffEq: OrdinaryDiffEqAdaptiveAlgorithm, OrdinaryDiffEqCompositeAlgorithm, DAEAlgorithm, FunctionMap,LinearExponential
+
+
 
 @testset "Initial checks ArrayPartition" begin
     r0 = [1131.340, -2282.343, 6672.423]∙km
@@ -57,9 +60,17 @@ end
     print("\n")
 end
 
-@testset "zero of ArrayPartition with mixed units" begin
+@testset "zero ArrayPartition" begin
     @test zero.([0.0m∙s⁻¹, 0.0m∙s⁻¹, 909.3266739736605m∙s⁻², 525.0m∙s⁻²],) == [0.0m∙s⁻¹, 0.0m∙s⁻¹, 0.0m∙s⁻², 0.0m∙s⁻²]
     @test zero(ArrayPartition([0.0m∙s⁻¹, 0.0m∙s⁻¹, 909.3266739736605m∙s⁻², 525.0m∙s⁻²],)) ==  [0.0m∙s⁻¹, 0.0m∙s⁻¹, 0.0m∙s⁻², 0.0m∙s⁻²]
+    @test @inferred(zero(ArrayPartition([0.0m∙s⁻¹, 0.0m∙s⁻¹, 909.3266739736605m∙s⁻², 525.0m∙s⁻²],))) ==  [0.0m∙s⁻¹, 0.0m∙s⁻¹, 0.0m∙s⁻², 0.0m∙s⁻²]
+    @test typeof(zero(ArrayPartition([0.0m∙s⁻¹, 0.0m∙s⁻¹, 909.3266739736605m∙s⁻², 525.0m∙s⁻²],))) ==
+        ArrayPartition{Quantity{Float64, D, U} where {D, U}, Tuple{Vector{Quantity{Float64, D, U} where {D, U}}}}
+end
+
+
+
+@testset "ArrayPartition with mixed units" begin
     α₀() = 30°
     x₀() = 0.0m
     y₀() = 0.0m
@@ -96,9 +107,6 @@ end
         AutoVern7(Rodas5(autodiff=false)),
         AutoVern8(Rodas5(autodiff=false)),
         AutoVern9(Rodas5(autodiff=false))])
-
-
-    using OrdinaryDiffEq: OrdinaryDiffEqAdaptiveAlgorithm, OrdinaryDiffEqCompositeAlgorithm, DAEAlgorithm, FunctionMap,LinearExponential
 
     function requires_stepsize(alg)
         adaptive = OrdinaryDiffEq.isadaptive(alg)
