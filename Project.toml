@@ -1,7 +1,7 @@
 name = "MechGlueDiffEqBase"
 uuid = "2532746b-52b5-4539-9431-8bb183ab067f"
 authors = ["hustf <hustf@users.noreply.github.com> and contributors"]
-version = "0.2.2"
+version = "0.2.3"
 
 [deps]
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"

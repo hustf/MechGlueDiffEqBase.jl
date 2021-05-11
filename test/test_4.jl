@@ -1,7 +1,6 @@
 # Check type stability of ODE_DEFAULT_NORM with mixed units and with ArrayPartition
 using Test
 using MechGlueDiffEqBase
-import MechGlueDiffEqBase: zero_collection
 using MechanicalUnits: @import_expand, dimension, NoDims, ∙
 import MechanicalUnits: g, g⁻¹
 @import_expand(km, N, s, m, km, kg, °, inch)
@@ -46,16 +45,36 @@ end
     @test @inferred(zero(rv1)) == [0.0, 0.0]km
     @test typeof(zero(rv0)) == typeof(rv0)
 end
-@testset "(Inferrable) zero  ArrayPartition mixed units" begin
-    r0 = [1.0km, 2km, 3m/s, 4m/s]
-    v0 = [1.0km/s, 2.0km/s, 3.0m/s², 4m/s²]
-    # Not inferrable, but inferred return type is now AbstractVector{var"#s831"} where var"#s831", not Any
-    @test zero(r0) == [0.0km, 0.0km, 0.0m/s, 0.0m/s]
-    # ArrayPartition fixes that
+@testset "Inferrable zero vector and ArrayPartition mixed units" begin
+    r0 = [1.0km, -2km, 3m/s, 4m/s]
+    @test @inferred(zero(r0)) == [0.0km, 0.0km, 0.0m/s, 0.0m/s]
     rv0 = @inferred ArrayPartition(r0)
     zer = @inferred zero(rv0)
     @test zer == [0.0km, 0.0km, 0.0m/s, 0.0m/s]
     @test typeof(zer) === typeof(rv0)
+end
+
+@testset "Inferrable similar vector and ArrayPartition compatible units" begin
+    r0 = [1131.340, -2282.343, 6672.423]∙km
+    simi = @inferred(similar(r0))
+    @test all(typeof.(r0) == typeof.(simi))
+    @test simi !== r0
+    rv0 = @inferred ArrayPartition(r0)
+    sima = @inferred similar(rv0)
+    @test all(typeof.(rv0) == typeof.(sima))
+    @test sima !== rv0
+end
+
+
+@testset "Inferrable similar vector and ArrayPartition mixed units" begin
+    r0 = [1.0km, -2km, 3m/s, 4m/s]
+    simi = @inferred(similar(r0))
+    @test all(typeof.(r0) == typeof.(simi))
+    @test simi !== r0
+    rv0 = @inferred ArrayPartition(r0)
+    sima = @inferred similar(rv0)
+    @test all(typeof.(rv0) == typeof.(sima))
+    @test sima !== rv0
 end
 
 @testset "Inferrable UNITLESS_ABS2 Unitless ArrayPartition" begin
