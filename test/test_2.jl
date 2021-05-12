@@ -46,12 +46,6 @@ end
     sol = solve(prob,ExplicitRK())
 end
 
-
-
-
-
-
-
 @testset "Without ArrayPartition - broken" begin
     # coordinate: u = [position, momentum]
     # parameters: p = [mass, force constanst]

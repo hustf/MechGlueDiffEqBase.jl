@@ -61,16 +61,23 @@ end
 
 # Vectors with compatible units, treat as normal
 similar(x::Vector{Quantity{T, D, U}}) where {T,D,U} = Vector{Quantity{T, D, U}}(undef, size(x,1))
-#similar(a::Array{T,1}) where {T}                    = Vector{T}(undef, size(a,1))
 # Vectors with incompatible units, special inferreable treatment
 # VERY similar is still similar and (very slightly) different
 similar(x::Vector{Q}) where {Q<:AbstractQuantity{T, D, U} where {D,U}} where T = copy(x)
 
 
+# Vectors with compatible units, treat as normal
+similar(x::Vector{Quantity{T, D, U}}, S::Type) where {T,D,U} = Vector{S}(undef, size(x,1))
+# Vectors with incompatible units, special inferreable treatment
+function similar(x::Vector{Q}, S::Type) where {Q<:AbstractQuantity{T, D, U} where {D, U}} where T
+    x0 = Vector{S}(undef, size(x, 1))
+end
+
 
 
 # KISS pre-compillation to reduce loading times
 # This is simply a boiled-down obfuscated test_4.jl
+
 import Unitfu: m, s, kg, N, ∙
 let
     r0ul = [1131.340, -2282.343, 6672.423]

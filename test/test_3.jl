@@ -70,7 +70,7 @@ end
 
 
 
-@testset "ArrayPartition with mixed units" begin
+@testset "ArrayPartition with mixed units, not inferrable" begin
     α₀() = 30°
     x₀() = 0.0m
     y₀() = 0.0m
@@ -88,6 +88,8 @@ end
     Rx(vx, vy) = R(vx, vy) * cos(α(vx, vy))
     Ry(vx, vy) = R(vx, vy) * sin(α(vx, vy))
 
+    # An inferrable version of this is much faster
+    # but this should work anyway.
     function f(du,u,p,t)
         x, y, vx,vy = u
         du[1] = dx = vx

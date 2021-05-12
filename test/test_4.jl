@@ -3,6 +3,7 @@ using Test
 using MechGlueDiffEqBase
 using MechanicalUnits: @import_expand, dimension, NoDims, ∙
 import MechanicalUnits: g, g⁻¹
+import MechanicalUnits.Unitfu.numtype
 @import_expand(km, N, s, m, km, kg, °, inch)
 using DiffEqBase, OrdinaryDiffEq
 
@@ -63,6 +64,9 @@ end
     sima = @inferred similar(rv0)
     @test all(typeof.(rv0) == typeof.(sima))
     @test sima !== rv0
+    # The expected behaviour (in some algorithms) is to drop the units here:
+    simb = @inferred(similar(r0, Int64))
+    @test all(typeof.(simb) .== Int64)
 end
 
 
@@ -75,6 +79,8 @@ end
     sima = @inferred similar(rv0)
     @test all(typeof.(rv0) == typeof.(sima))
     @test sima !== rv0
+    simb = @inferred(similar(r0, Int64))
+    @test all(typeof.(simb) .== Int64)
 end
 
 @testset "Inferrable UNITLESS_ABS2 Unitless ArrayPartition" begin

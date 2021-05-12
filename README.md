@@ -11,6 +11,7 @@ These functions preserve types for mixed-unit vectors. E.g. [1.0kg, 2.0N, 3.0m/s
 
 This package also uses and reexports 'ArrayPartition' from [RecursiveArrayTools](https://github.com/SciML/RecursiveArrayTools.jl), which enables type-stable solution of equations with mixed units. It pre-compiles it with use of mixed unit vectors.
 
+An example of inferrable, mixed units calculations with debugging is included in `test/test_5.jl`.
 
 Note: The way error tolerances are defined is initially confusing, but good to know:
 
