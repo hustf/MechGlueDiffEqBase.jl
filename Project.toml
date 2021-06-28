@@ -1,7 +1,7 @@
 name = "MechGlueDiffEqBase"
 uuid = "2532746b-52b5-4539-9431-8bb183ab067f"
 authors = ["hustf <hustf@users.noreply.github.com> and contributors"]
-version = "0.2.5"
+version = "0.2.6"
 
 [deps]
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
@@ -10,6 +10,9 @@ Unitfu = "5ee08b94-2369-4f4a-b8c7-99333ba35fb0"
 
 [compat]
 julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
