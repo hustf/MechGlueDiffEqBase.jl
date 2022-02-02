@@ -32,10 +32,13 @@ end
 end
 
 @inline function UNITLESS_ABS2(u::AbstractArray{<:AbstractQuantity,N} where N)
-    map(UNITLESS_ABS2, u)
+    sum(map(UNITLESS_ABS2, u))
 end
 @inline function UNITLESS_ABS2(u::AbstractArray{Quantity{T},N}) where {N, T}
-    map(UNITLESS_ABS2, u)
+    sum(map(UNITLESS_ABS2, u))
+end
+@inline function UNITLESS_ABS2(u::RecursiveArrayTools.ArrayPartition{Quantity})
+    sum(map(UNITLESS_ABS2, u))
 end
 
 @inline function UNITLESS_ABS2(x::T) where T <: AbstractQuantity

@@ -46,7 +46,7 @@ end
     sol = solve(prob,ExplicitRK())
 end
 
-@testset "Without ArrayPartition - broken" begin
+@testset "Without ArrayPartition" begin
     # coordinate: u = [position, momentum]
     # parameters: p = [mass, force constanst]
     function f_harmonic!(du,u,p,t)
@@ -61,5 +61,5 @@ end
     u0 = [1.0m, 0.0∙kg∙m/s] # initial values (position, momentum)
     tspan = (0.0∙s, 10.0∙s)
     prob = ODEProblem(f_harmonic!, u0, tspan, p)
-    @test_broken solve(prob, Tsit5()).retcode == :Success
+    @test solve(prob, Tsit5()).retcode == :Success
 end
