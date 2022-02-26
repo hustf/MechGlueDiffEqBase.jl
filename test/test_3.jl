@@ -14,13 +14,13 @@ using OrdinaryDiffEq: OrdinaryDiffEqAdaptiveAlgorithm, OrdinaryDiffEqCompositeAl
     μ = 398600.4418∙km³/s²
     rv0 = ArrayPartition(r0,v0)
 
-    function f(dy, y, μ, t)
+    function g(dy, y, μ, t)
         r = norm(y.x[1])
         dy.x[1] .= y.x[2]
         dy.x[2] .= -μ .* y.x[1] / r^3
         dy
     end
-    prob = ODEProblem(f,rv0,(0.0, 1.0)s,μ)
+    prob = ODEProblem(g,rv0,(0.0, 1.0)s,μ)
 
     integrator = DiffEqBase.__init(prob, Tsit5(), dt = 0.1s)
     # Internalnorm's range should be dimensionless
@@ -33,8 +33,8 @@ using OrdinaryDiffEq: OrdinaryDiffEqAdaptiveAlgorithm, OrdinaryDiffEqCompositeAl
     
     # Overflow close, numeric trouble, varies depending on REPL / debug mode / StaticArrays v1.3.3 ⇒ v1.3.4
     expected = ArrayPartition(([-2901.219564183984, 1186.0788812761075, 6424.836906829741]km, [-4.8974038661037795, 4.755689653514817, -3.0411255045851466]km∙s⁻¹))
-    boolsum = sum(sol1 ./ expected) ≈ 6.0
-    @show boolsum
+    boolsum = sum(sol1 ./ expected) > 5.99999 && sum(sol1 ./ expected) < 6.0000001
+    @show sum(sol1 ./ expected)
     @test boolsum 
 end
 

@@ -1,6 +1,7 @@
 [deps]
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 MechGlueDiffEqBase = "2532746b-52b5-4539-9431-8bb183ab067f"
 MechanicalUnits = "e6be9192-89dc-11e9-36e6-5dbcb28f419e"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"

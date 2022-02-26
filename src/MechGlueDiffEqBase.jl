@@ -5,6 +5,7 @@ import Unitfu: Dimensions, FreeUnits
 import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2
 import DiffEqBase: calculate_residuals, @muladd
 using RecursiveArrayTools
+import OrdinaryDiffEq.FiniteDiff: compute_epsilon
 export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantity
 export norm , ArrayPartition, similar, zero
 
@@ -74,6 +75,13 @@ similar(x::Vector{Quantity{T, D, U}}, S::Type) where {T,D,U} = Vector{S}(undef, 
 # Vectors with incompatible units, special inferreable treatment
 function similar(x::Vector{Q}, S::Type) where {Q<:AbstractQuantity{T, D, U} where {D, U}} where T
     x0 = Vector{S}(undef, size(x, 1))
+end
+
+
+# The function signature in OrdinaryDiffEq.FiniteDiff is restrictive. "Real" excludes complex numbers,
+# but that unfortunately excludes Quantity as well.
+@inline function compute_epsilon(::Val{:central}, x::T, relstep::Real, absstep::Quantity, dir=nothing) where T<:Number
+    return max(relstep*abs(x), absstep)
 end
 
 
