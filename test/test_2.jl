@@ -5,7 +5,6 @@ using MechanicalUnits: @import_expand, dimension, NoDims, ∙
 using OrdinaryDiffEq
 @import_expand(N, s, m, km, kg)
 
-#using OrdinaryDiffEq, Unitfu
 algs = [Euler(),Midpoint(),Heun(),Ralston(),RK4(),SSPRK104(),SSPRK22(),SSPRK33(),
         SSPRK43(),SSPRK432(),BS3(),BS5(),DP5(),DP8(),Feagin10(),Feagin12(),
         Feagin14(),TanYam7(),Tsit5(),TsitPap8(),Vern6(),Vern7(),Vern8(),Vern9()]
@@ -48,7 +47,7 @@ end
 
 @testset "Without ArrayPartition" begin
     # coordinate: u = [position, momentum]
-    # parameters: p = [mass, force constanst]
+    # parameters: p = [mass, stiffness] constants
     function f_harmonic!(du,u,p,t)
         du[1] = u[2]/p[1]
         du[2] = -p[2]*u[1]

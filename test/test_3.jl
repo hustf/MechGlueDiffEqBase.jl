@@ -14,13 +14,13 @@ using OrdinaryDiffEq: OrdinaryDiffEqAdaptiveAlgorithm, OrdinaryDiffEqCompositeAl
     μ = 398600.4418∙km³/s²
     rv0 = ArrayPartition(r0,v0)
 
-    function g(dy, y, μ, t)
+    function goo(dy, y, μ, t)
         r = norm(y.x[1])
         dy.x[1] .= y.x[2]
         dy.x[2] .= -μ .* y.x[1] / r^3
         dy
     end
-    prob = ODEProblem(g,rv0,(0.0, 1.0)s,μ)
+    prob = ODEProblem(goo,rv0,(0.0, 1.0)s,μ)
 
     integrator = DiffEqBase.__init(prob, Tsit5(), dt = 0.1s)
     # Internalnorm's range should be dimensionless

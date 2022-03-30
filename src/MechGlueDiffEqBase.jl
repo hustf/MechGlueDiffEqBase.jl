@@ -1,13 +1,23 @@
 module MechGlueDiffEqBase
 import Base: similar
-import Unitfu: AbstractQuantity, Quantity, ustrip, norm, unit, zero
+import Unitfu: AbstractQuantity, Quantity, ustrip, norm, unit, zero, numtype
 import Unitfu: Dimensions, FreeUnits
 import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2
 import DiffEqBase: calculate_residuals, @muladd
 using RecursiveArrayTools
-import OrdinaryDiffEq.FiniteDiff: compute_epsilon
+import OrdinaryDiffEq.FiniteDiff: compute_epsilon, finite_difference_derivative, default_relstep
+import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache
+import Base: show, summary, print, setindex
+using OrdinaryDiffEq.FiniteDiff: _vec
+import OrdinaryDiffEq.ArrayInterface
+import NLSolversBase: alloc_DF
 export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantity
-export norm , ArrayPartition, similar, zero
+export norm , ArrayPartition, similar, zero, compute_epsilon
+export jacobian_prototype_zero, jacobian_prototype_nan
+export finite_difference_derivative, finite_difference_jacobian, show, summary, print
+export matrixlike_arraypartition, MatrixLike, similar_matrix, row_vector, JacobianCache
+export numtype, alloc_DF
+
 
 # This is identical to what DiffEqBase defines for Unitful
 function value(x::Type{AbstractQuantity{T,D,U}}) where {T,D,U}
@@ -77,14 +87,7 @@ function similar(x::Vector{Q}, S::Type) where {Q<:AbstractQuantity{T, D, U} wher
     x0 = Vector{S}(undef, size(x, 1))
 end
 
-
-# The function signature in OrdinaryDiffEq.FiniteDiff is restrictive. "Real" excludes complex numbers,
-# but that unfortunately excludes Quantity as well.
-@inline function compute_epsilon(::Val{:central}, x::T, relstep::Real, absstep::Quantity, dir=nothing) where T<:Number
-    return max(relstep*abs(x), absstep)
-end
-
-
+include("derivatives_and_jacobians.jl")
 
 # KISS pre-compillation to reduce loading times
 # This is simply a boiled-down obfuscated test_4.jl
