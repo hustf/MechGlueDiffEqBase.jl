@@ -15,14 +15,13 @@ export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantit
 export norm , ArrayPartition, similar, zero, compute_epsilon
 export jacobian_prototype_zero, jacobian_prototype_nan
 export finite_difference_derivative, finite_difference_jacobian, show, summary, print
-export matrixlike_arraypartition, MatrixLike, similar_matrix, row_vector, JacobianCache
-export numtype, alloc_DF
+export MatrixCandidate_arraypartition, MatrixCandidate, similar_matrix, row_vector, JacobianCache
+export numtype, alloc_DF, mixed_array_type, MixedArray, SqMatMut, NotSqMatMut, is_square_matrix_mutable
 
 
 # This is identical to what DiffEqBase defines for Unitful
-function value(x::Type{AbstractQuantity{T,D,U}}) where {T,D,U}
-    T
-end
+value(x::Type{AbstractQuantity{T,D,U}}) where {T,D,U} = T
+
 # This is different from what DiffEqBase defines for Unitful
 value(::Type{<:AbstractQuantity{T,D,U}}) where {T,D,U<:Core.TypeofBottom} = Base.undef_ref_str
 value(x::Q) where {Q<:AbstractQuantity} = ustrip(x)

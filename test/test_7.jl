@@ -71,7 +71,7 @@ let
     # residual in-place from the problem solution, such that the 
     # residual is \vec{0} when the boundary condition is satisfied.
     bvp1 = BVProblem{true}(simplependulum´!, bc1!, u₀, tspan1, p1)
-    @time sol1 = solve(bvp1, Shooting(Tsit5()), dtmax = 0.05) # 0.007s
+    @time sol1 = solve(bvp1, Shooting(Tsit5()), dtmax = 0.05, autodiff = false);
     plotsol(sol1)
 end
 =#
@@ -94,7 +94,7 @@ let
     u₀ = ArrayPartition([0.0], [π/2])
     @inferred simplependulum´!(u₀ ./ 0.01, u₀, p1, 0.01)
     bvp1 = BVProblem(simplependulum´!, bc1!, u₀, tspan1, p1)
-    @time sol1 = solve(bvp1, Shooting(Tsit5()), dtmax = 0.05) # 0.012s
+    @time sol1 = solve(bvp1, Shooting(Tsit5()), dtmax = 0.05,  autodiff = false); # 0.012s
     plotsol(sol1)
 end
 
@@ -219,11 +219,12 @@ let
     "Template for mutable local tuple at t = 0 - will be adapted to fit boundary conditions `bc1!`"
     u₀ = ArrayPartition([0.0], [π/2]s⁻¹)
     @inferred simplependulum´!(u₀ ./ 0.01s, u₀, p2, 0.01s)
+    prob3 = ODEProblem(simplependulum´!, u₀, tspan2, p2) 
+    sol3 = solve(prob3, Tsit5(), dtmax = 0.05s, autodiff = false);
+    plotsol(sol3)
+
     bvp2 = BVProblem(simplependulum´!, bc1!, u₀, tspan2, p2)
-    solve(bvp2, Shooting(Tsit5()), dtmax = 0.05s    )
-    #prob2 = ODEProblem(simplependulum´!, u₀, tspan2, p2) 
-    #sol2 = solve(prob2, Tsit5(), dtmax = 0.05s);
-    #plotsol(sol2)
+    @enter solve(bvp2, Shooting(Tsit5()), dtmax = 0.05s, autodiff = false    )
 
     #@time sol3 = solve(bvp2, Shooting(Tsit5()), dtmax = 0.05s    ) # 0.012s
     #plotsol(sol3)

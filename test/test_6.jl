@@ -19,6 +19,66 @@ import OrdinaryDiffEq.ArrayInterface
 #        ::Union{Nothing,Quantity{T, D, U}}=nothing, dir=nothing)
 @test compute_epsilon(Val(:complex), 1.0kg, nothing, nothing, nothing) ≈ 2.220446049250313e-16
 
+#############################################
+# Testing dispatch on a mutable square 
+# matrix. We want those to be inferrable,
+# which the standard matrix type Any[1 2; 3 4] 
+# is mostly not. For inferrability, we implement
+# as nested ArrayPartition. For mutability,
+# the innermost type is a one-element vector.
+#############################################
+let # Mutable
+    M0 = ArrayPartition()
+    M1 = ArrayPartition(ArrayPartition([1]), ArrayPartition([2]))
+    M2 = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]))
+    M3 = ArrayPartition(ArrayPartition([1], [2], [3]), ArrayPartition([4], [5], [6]), ArrayPartition([7], [8], [9]))
+    Mrect = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]), ArrayPartition([5], [6]))
+    println("M0:\n", M0)
+    println("M0:\n", repr(:"text/plain", M0, context = :color=>true))
+    println("M1:\n", M1)
+    println("M1:\n", repr(:"text/plain", M1, context = :color=>true))
+    println("M2:\n", M2)
+    println("M2:\n", repr(:"text/plain", M2, context = :color=>true))
+    println("M3:\n", M3)
+    println("M3:\n", repr(:"text/plain", M3, context = :color=>true))
+    @test M0 isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}}
+    @test !(M1 isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}})
+    @test M2 isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}}
+    @test M3 isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}}
+    @test !(Mrect isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}})
+    @test !is_square_matrix_mutable(M0)
+    @test !is_square_matrix_mutable(M1)
+    @test is_square_matrix_mutable(M2)
+    @test is_square_matrix_mutable(M3)
+end
+
+let # Immutable
+    M0 = ArrayPartition()
+    M1 = ArrayPartition(ArrayPartition(1), ArrayPartition(2))
+    M2 = ArrayPartition(ArrayPartition(1, 2), ArrayPartition(3, 4))
+    M3 = ArrayPartition(ArrayPartition(1, 2, 3), ArrayPartition(4, 5, 6), ArrayPartition(7, 8, 9))
+    Mrect = ArrayPartition(ArrayPartition(1, 2), ArrayPartition(3, 4), ArrayPartition(5, 6))
+    println("M0:\n", M0)
+    println("M0:\n", repr(:"text/plain", M0, context = :color=>true))
+    println("M1:\n", M1)
+    println("M1:\n", repr(:"text/plain", M1, context = :color=>true))
+    println("M2:\n", M2)
+    println("M2:\n", repr(:"text/plain", M2, context = :color=>true))
+    println("M3:\n", M3)
+    println("M3:\n", repr(:"text/plain", M3, context = :color=>true))
+    @test M0 isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}}
+    @test !(M1 isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}})
+    @test M2 isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}}
+    @test M3 isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}}
+    @test !(Mrect isa ArrayPartition{T, NTuple{N, U}} where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}})
+    @test !is_square_matrix_mutable(M0)
+    @test !is_square_matrix_mutable(M1)
+    @test !is_square_matrix_mutable(M2)
+    @test !is_square_matrix_mutable(M3)
+end
+
+#function testme(M::)
+#=
 ###################################
 # Matrix-like nested ArrayPartition
 # [2, 2] = .x[2][2]
@@ -27,7 +87,7 @@ import OrdinaryDiffEq.ArrayInterface
    x = ArrayPartition(1,2)
    f = x -> ArrayPartition(x[1] + 2x[2], 3x[1] + 4x[2])
    jacobian_prototype_zero(x, f(x))
-end == matrixlike_arraypartition([0.0 0.0; 0.0 0.0])
+end == MatrixCandidate_arraypartition([0.0 0.0; 0.0 0.0])
 @test let
     x = ArrayPartition(1,2)
     f = x -> ArrayPartition(x[1] + 2x[2], 3x[1] + 4x[2])
@@ -42,14 +102,14 @@ end == matrixlike_arraypartition([0.0 0.0; 0.0 0.0])
     matjac = [0.0cm    0.0cm∙s∙kg⁻¹
               0.0cm∙s  0.0cm∙s²∙kg⁻¹]
     similar_matrix(apa) == matjac || return false
-    string(apa) == "MatrixLike ArrayPartition:[0.0cm 0.0cm∙s∙kg⁻¹; 0.0cm∙s 0.0cm∙s²∙kg⁻¹]"
+    string(apa) == "MatrixCandidate ArrayPartition:[0.0cm 0.0cm∙s∙kg⁻¹; 0.0cm∙s 0.0cm∙s²∙kg⁻¹]"
 end
 
  @test let
     x = ArrayPartition(1s, 2kg)
     f = x -> ArrayPartition(x[1]cm + 2s∙cm/kg * x[2], 3cm∙s ∙ x[1] + 4cm∙s²/kg∙ x[2])
     jacobian_prototype_zero(x, f(x))
- end == matrixlike_arraypartition([0.0cm   0.0cm∙s∙kg⁻¹
+ end == MatrixCandidate_arraypartition([0.0cm   0.0cm∙s∙kg⁻¹
                                    0.0cm∙s  0.0cm∙s²∙kg⁻¹])
 
 

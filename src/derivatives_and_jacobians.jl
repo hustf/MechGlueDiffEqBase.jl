@@ -18,7 +18,7 @@ end
 # Extend Unitifu function for non-quantities
 numtype(x::Type) = x
 
-# The only change here is the default absstep argument. From FiniteDiff\src\derivatives.jl:4
+# From FiniteDiff\src\derivatives.jl:4. The only change here is the default absstep argument. 
 function finite_difference_derivative(
     f,
     x::T,
@@ -41,17 +41,38 @@ function finite_difference_derivative(
     fdtype_error(returntype)
 end
 
-# We want to specialize on ArrayPartitions that represent Matrix{Any} with
-# dimension larger than one in both directions, since e.g ArrayPartition(1s, 2kg)
-# is simply a vector with better type inferrability.
-const MatrixLike = ArrayPartition{T, Tuple{U, V}} where {T, U<:ArrayPartition, V<:ArrayPartition}
+# We want to specialize on ArrayPartitions that 
+# - can represent square matrices  
+# - are mutable
+# - have width and height > 1
+# - are inferrable
+# ...because Matrix{Any} is mostly not inferrable. For inferrability, we implement
+# such matrix-like objects as nested ArrayPartition. 
+# For mutability, the innermost type is a one-element vector.
+
+# This imperfect definition of what we want to dispatch on includes immutable
+# versions and empty tuples. It dispatches a bit too widely.
+const MatrixCandidate = ArrayPartition{T, Tuple{U, V}} where {T, U<:ArrayPartition, V<:ArrayPartition}
+
+# We use traits-based dispatch below:
+abstract type MixedArray end
+struct SqMatMut <: MixedArray end
+struct NotSqMatMut <: MixedArray end
+# The trait function returns a concrete type for the trait.
+mixed_array_type(::T) where {T<:AbstractArray} = NotSqMatMut()             # Fallback
+mixed_array_type(::ArrayPartition{Union{}, Tuple{}}) = NotSqMatMut()       # Covers N=0, see https://docs.julialang.org/en/v1/manual/methods/#Tuple-and-NTuple-arguments
+mixed_array_type(::ArrayPartition{T, NTuple{N, U}}) where {N, T, V<:NTuple{N, Vector{<:T}}, U<:ArrayPartition{T, V}} = SqMatMut()
+is_square_matrix_mutable(M) = mixed_array_type(M) isa SqMatMut
+
+
+
 
 """
-    matrixlike_arraypartition(A::Matrix)
+    MatrixCandidate_arraypartition(A::Matrix)
 
-Matrix{T,2} -> nested ArrayPartition (MatrixLike)  
+Matrix{T,2} -> nested ArrayPartition (MatrixCandidate)  
 """
-matrixlike_arraypartition(A::Matrix) = ArrayPartition((ArrayPartition(rw...) for rw in eachrow(A))...)
+MatrixCandidate_arraypartition(A::Matrix) = ArrayPartition((ArrayPartition(rw...) for rw in eachrow(A))...)
 
 """
     similar_matrix(A::ArrayPartition)
@@ -73,7 +94,7 @@ function similar_matrix(A::ArrayPartition)
     X
 end
 """
-    row_vector(A::MatrixLike)
+    row_vector(A::MatrixCandidate)
 
 The container type we use has unclear distinction between row and column vector.
 But the Jacobian for f: Rⁿ → R (the gradient) is a row vector, so call this 
@@ -89,7 +110,7 @@ function row_vector(A::ArrayPartition)
     X
 end
 # Decorated representation of ArrayPartition "matrix"
-function summary(io::IO, A::MatrixLike)
+function summary(io::IO, A::MatrixCandidate)
     col = get(io, :unitsymbolcolor, :cyan)
     printstyled(io, color = col, "Matrix representation of ")
     print(io, typeof(A))
@@ -97,21 +118,21 @@ function summary(io::IO, A::MatrixLike)
 end
 
 # Un-decorated representation of ArrayPartition "matrix"
-print(io::IO, A::MatrixLike) =  print_as_matrixlike(io, A)
+print(io::IO, A::MatrixCandidate) =  print_as_MatrixCandidate(io, A)
 
-function print_as_matrixlike(io::IO, A::AbstractArray)
+function print_as_MatrixCandidate(io::IO, A::AbstractArray)
     X = similar_matrix(A)
     col = get(io, :unitsymbolcolor, :cyan)
     buf = IOBuffer()
     ioc = IOContext(buf, IOContext(io).dict)
-    printstyled(ioc, color = col, "MatrixLike ArrayPartition:")
+    printstyled(ioc, color = col, "MatrixCandidate ArrayPartition:")
     prefix = String(take!(buf))
     isempty(X) ?
         Base._show_empty(io, X) :
         Base._show_nonempty(io, X, prefix)
 end
 
-function Base.show(io::IO, mime::MIME"text/plain", A::MatrixLike)
+function Base.show(io::IO, mime::MIME"text/plain", A::MatrixCandidate)
     # 0) show summary before setting :compact
     summary(io, A)
     isempty(A) && return
@@ -168,10 +189,10 @@ function jacobian_prototype_nan(x::ArrayPartition, vecfx::ArrayPartition)
     typednan = (xel, fxel) -> NaN * (fxel / xel)
     genrow(fxel) = map(xel -> typednan(xel, fxel) , x)
     jprot = map(genrow, vecfx)
-   # @info "x" x maxlog=2
-   # @info "vecfx" vecfx maxlog=2
-   # @info "jprot = $jprot" maxlog=2
-   # @info "MatrixLike" jprot isa MatrixLike vecfx
+    @info "x" x maxlog=2
+    @info "vecfx" vecfx maxlog=2
+    @info "jprot = $jprot" maxlog=2
+    @info "MatrixCandidate" jprot isa MatrixCandidate vecfx
     jprot
 end
 function alloc_DF(x::ArrayPartition{<:AbstractQuantity, <:Tuple} , F)
@@ -181,7 +202,7 @@ function alloc_DF(x::ArrayPartition{<:AbstractQuantity, <:Tuple} , F)
     @info "x" x maxlog=2
     @info "F" F maxlog=2
     @info "jprot = $jprot" maxlog=2
-    @info "MatrixLike" jprot isa MatrixLike maxlog=2
+    @info "MatrixCandidate" jprot isa MatrixCandidate maxlog=2
     jprot
 end
 
