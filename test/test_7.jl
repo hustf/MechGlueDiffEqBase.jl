@@ -27,19 +27,19 @@ function plotsol(sol)
     x = sol.t[mid]
     y = sol[mid][1]
     plot!(pl, [x], [y], marker = true)
-    str = "θ $(strround(y)) @ t $(strround(x))"
+    str = "θA $(strround(y)) @ t $(strround(x))"
     annotation = (1.1x / oneunit(x), 1.2y / oneunit(y), Plots.text(str,  11, :left))
     plot!(pl[1]; annotation)
     x = sol.t[end]
     y = sol[end][1]
     plot!(pl, [x], [y], marker = true)
-    str = "θ $(strround(y)) @ t $(strround(x))"
+    str = "θB $(strround(y)) @ t $(strround(x))"
     annotation = (0.8x / oneunit(x), 1.2y / oneunit(y), Plots.text(str,  11, :left))
     plot!(pl[1]; annotation)
     # 
     x = sol.t[mid]
     y = sol[mid][2]
-    str = "θ´"
+    str = "θ'"
     annotation = (1.1x / oneunit(x), 1.2y / oneunit(y), Plots.text(str,  11, :left))
     plot!(pl[1], marker = true; annotation)
 end
@@ -51,7 +51,7 @@ function simplependulum´!(u´, u , p, t)
     θ´ = u[2]
     u´[1] = θ´
     u´[2] = -(g/L) * sin(θ) # θ´´
-    @info typeof(u´) maxlog=20
+    @debug "typeof(u´)" typeof(u´) maxlog=2
     u´
 end
 function bc1!(residual, u, p, t)
@@ -61,20 +61,23 @@ function bc1!(residual, u, p, t)
     residual[1] = u[mid][1] + π/2 
     # the solution at the end of the time span should be π/2
     residual[2] = u[end][1] - π/2 
+    @debug "typeof(residual) = " typeof(residual) maxlog = 2
+    @debug "residual = " residual maxlog = 2
+    residual
 end
-#=
+
 # 1 a) Vector domain and range
 let
     "Template for mutable local tuple at t = 0 - will be adapted to fit boundary conditions `bc1!`"
-    u₀ = [0.0, π/2]
+    u₀ = [0.0, π/2]  # θ, θ´
     # The boundary conditions are specified by a function that calculates the 
     # residual in-place from the problem solution, such that the 
     # residual is \vec{0} when the boundary condition is satisfied.
     bvp1 = BVProblem{true}(simplependulum´!, bc1!, u₀, tspan1, p1)
-    @time sol1 = solve(bvp1, Shooting(Tsit5()), dtmax = 0.05, autodiff = false);
+    sol1 = solve(bvp1, Shooting(Tsit5()), dtmax = 0.05, autodiff = false);
     plotsol(sol1)
 end
-=#
+
 
 
 #################################################
@@ -89,13 +92,25 @@ end
 #end
 #packout(u) = u.x[1][1], u.x[2][1]
 
+function bc2!(residual, u, p, t)
+    # the solution at the middle of the time span should be -π/2
+    mid = searchsortedfirst(t, t[end] / 2)
+    # residual is a DE solution.
+    residual[1] = u[mid][1] + π/2 
+    # the solution at the end of the time span should be π/2
+    residual[2] = u[end][1] - π/2 
+    @debug "typeof(residual) = " typeof(residual) maxlog = 2
+    @debug "residual = " residual maxlog = 2
+    residual
+end
+
 let
     "Template for mutable local tuple at t = 0 - will be adapted to fit boundary conditions `bc1!`"
-    u₀ = ArrayPartition([0.0], [π/2])
+    u₀ = ArrayPartition([0.0], [π/2]) # θ, θ´
     @inferred simplependulum´!(u₀ ./ 0.01, u₀, p1, 0.01)
-    bvp1 = BVProblem(simplependulum´!, bc1!, u₀, tspan1, p1)
-    @time sol1 = solve(bvp1, Shooting(Tsit5()), dtmax = 0.05,  autodiff = false); # 0.012s
-    plotsol(sol1)
+    bvp2 = BVProblem(simplependulum´!, bc2!, u₀, tspan1, p1)
+    sol2 = solve(bvp2, Shooting(Tsit5()), dtmax = 0.05,  autodiff = false); # 0.008982
+    plotsol(sol2)
 end
 
 
@@ -132,8 +147,8 @@ end
     #    end
     #    sol
     #end
-    #@time sol1 = solve_guarded(simplependulum´!; debug = false)
-    #@time sol1 = solve(ODEProblem(simplependulum2´!, u₀, tspan), Tsit5())
+    #sol1 = solve_guarded(simplependulum´!; debug = false)
+    #sol1 = solve(ODEProblem(simplependulum2´!, u₀, tspan), Tsit5())
 #end
 #= 
     function bc1!(residual, u, p, t)
@@ -148,8 +163,8 @@ end
     bc1!(residual, sol1, nothing, nothing)
     @info "Residual with u₀ = $u₀ is " residual
     bvp1 = BVProblem(simplependulum´!, bc1!, u₀, tspan)
-    @time sol1 = solve(bvp1, Shooting(Tsit5()))
-    @time sol1 = solve(bvp1, GeneralMIRK4(), dt = 0.05)
+    sol1 = solve(bvp1, Shooting(Tsit5()))
+    sol1 = solve(bvp1, GeneralMIRK4(), dt = 0.05)
     plotsol(sol1)
 end
 2 b)
@@ -217,21 +232,22 @@ const tspan2 = (0.0, π/2)s
 const p2 = (9.81m/s², 1.0m) # g, L
 let
     "Template for mutable local tuple at t = 0 - will be adapted to fit boundary conditions `bc1!`"
-    u₀ = ArrayPartition([0.0], [π/2]s⁻¹)
-    @inferred simplependulum´!(u₀ ./ 0.01s, u₀, p2, 0.01s)
-    prob3 = ODEProblem(simplependulum´!, u₀, tspan2, p2) 
+    u₂ = ArrayPartition([0.0], [π/2]s⁻¹) # θ, θ´
+    @inferred simplependulum´!(u₂ ./ 0.01s, u₂, p2, 0.01s)
+    prob3 = ODEProblem(simplependulum´!, u₂, tspan2, p2) 
     sol3 = solve(prob3, Tsit5(), dtmax = 0.05s, autodiff = false);
     plotsol(sol3)
 
-    bvp2 = BVProblem(simplependulum´!, bc1!, u₀, tspan2, p2)
-    @enter solve(bvp2, Shooting(Tsit5()), dtmax = 0.05s, autodiff = false    )
-
-    #@time sol3 = solve(bvp2, Shooting(Tsit5()), dtmax = 0.05s    ) # 0.012s
+    bvp3 = BVProblem(simplependulum´!, bc2!, u₂, tspan2, p2)
+    with_logger(Logging.ConsoleLogger(stderr, Logging.Debug)) do 
+        solve(bvp3, Shooting(Tsit5()), dtmax = 0.05s, autodiff = false    )
+    end;
+    #sol3 = solve(bvp2, Shooting(Tsit5()), dtmax = 0.05s    ) # 0.012s
     #plotsol(sol3)
 end
 
 
-
+jprot = ArrayPartition{Quantity{Float64}, Tuple{Vector{ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Float64}}, Vector{Vector{Quantity{Float64,  ᵀ, Unitfu.FreeUnits{(s,),  ᵀ, nothing}}}}}}}, Vector{ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Quantity{Float64,  ᵀ⁻¹, Unitfu.FreeUnits{(s⁻¹,),  ᵀ⁻¹, nothing}}}}, Vector{Vector{Float64}}}}}}}((ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Float64}}, Vector{Vector{Quantity{Float64,  ᵀ, Unitfu.FreeUnits{(s,),  ᵀ, nothing}}}}}}[ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Float64}}, Vector{Vector{Quantity{Float64,  ᵀ, Unitfu.FreeUnits{(s,),  ᵀ, nothing}}}}}}(([[NaN]], [[NaN]s]))], ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Quantity{Float64,  ᵀ⁻¹, Unitfu.FreeUnits{(s⁻¹,),  ᵀ⁻¹, nothing}}}}, Vector{Vector{Float64}}}}[ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Quantity{Float64,  ᵀ⁻¹, Unitfu.FreeUnits{(s⁻¹,),  ᵀ⁻¹, nothing}}}}, Vector{Vector{Float64}}}}(([[NaN]s⁻¹], [[NaN]]))]))
 
 
 

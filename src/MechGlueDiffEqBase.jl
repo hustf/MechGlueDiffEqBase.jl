@@ -8,6 +8,7 @@ using RecursiveArrayTools
 import OrdinaryDiffEq.FiniteDiff: compute_epsilon, finite_difference_derivative, default_relstep
 import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache
 import Base: show, summary, print, setindex
+using Base: array_summary
 using OrdinaryDiffEq.FiniteDiff: _vec
 import OrdinaryDiffEq.ArrayInterface
 import NLSolversBase: alloc_DF
@@ -15,8 +16,8 @@ export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantit
 export norm , ArrayPartition, similar, zero, compute_epsilon
 export jacobian_prototype_zero, jacobian_prototype_nan
 export finite_difference_derivative, finite_difference_jacobian, show, summary, print
-export MatrixCandidate_arraypartition, MatrixCandidate, similar_matrix, row_vector, JacobianCache
-export numtype, alloc_DF, mixed_array_type, MixedArray, SqMatMut, NotSqMatMut, is_square_matrix_mutable
+export MatrixCandidate_arraypartition, MatrixMixedCandidate, convert_to_matrix, row_vector, JacobianCache
+export numtype, alloc_DF, mixed_array_trait, convert_to_matrix_mixed, MatSqMut, NotMatSqMut, is_square_matrix_mutable
 
 
 # This is identical to what DiffEqBase defines for Unitful
@@ -86,7 +87,10 @@ function similar(x::Vector{Q}, S::Type) where {Q<:AbstractQuantity{T, D, U} wher
     x0 = Vector{S}(undef, size(x, 1))
 end
 
-include("derivatives_and_jacobians.jl")
+include("io_traits_conversion.jl")
+include("derivatives.jl")
+include("jacobian_prototypes.jl")
+
 
 # KISS pre-compillation to reduce loading times
 # This is simply a boiled-down obfuscated test_4.jl
