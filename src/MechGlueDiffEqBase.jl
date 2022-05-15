@@ -16,7 +16,7 @@ export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantit
 export norm , ArrayPartition, similar, zero, compute_epsilon
 export jacobian_prototype_zero, jacobian_prototype_nan
 export finite_difference_derivative, finite_difference_jacobian, show, summary, print
-export MixedCandidate, MatrixMixedCandidate, convert_to_array, JacobianCache
+export MixedCandidate, convert_to_array, JacobianCache
 export numtype, alloc_DF, mixed_array_trait, convert_to_mixed
 export MatSqMut, VecMut, NotMixed, NotMixed, Single, Empty
 export is_square_matrix_mutable, is_vector_mutable_stable
