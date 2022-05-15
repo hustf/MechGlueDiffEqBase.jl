@@ -178,21 +178,29 @@ function finite_difference_jacobian(
             x1_save = ArrayInterface.allowed_getindex(vecx1,i)
             x_save = ArrayInterface.allowed_getindex(vecx,i)
             epsilon = compute_epsilon(Val(:central), x_save, relstep, absstep[i], dir)
-            @debug "calculate_Ji_forward " vecx vecx1 epsilon i #x_save x1_save x_save x
-            _vecx1 = Base.setindex(vecx1,x1_save+epsilon,i)
-            _vecx = Base.setindex(vecx,x_save-epsilon,i)
-            _x1 = reshape(_vecx1, axes(x))
-            _x = reshape(_vecx, axes(x))
+            @debug "calculate_Ji_central" repr(vecx) repr(vecx1) epsilon i #x_save x1_save x_save x
+            #_vecx1 = Base.setindex(vecx1,x1_save+epsilon,i)
+            #_vecx = Base.setindex(vecx,x_save-epsilon,i)
+            setindex!(vecx1, x1_save+epsilon,i)
+            setindex!(vecx, x_save-epsilon,i)
+            _x1 = reshape(vecx1, axes(x))
+            _x = reshape(vecx, axes(x))
             vecfx1 = _vec(f(_x1))
             vecfx = _vec(f(_x))
-            dx = (vecfx1-vecfx)/(2epsilon)
+            d = (vecfx1-vecfx)/(2epsilon)
             @debug "calculate_Ji_forward " repr(vecfx) repr(vecfx1) epsilon i x_save _x1 x
-            return dx
+            setindex!(vecx1, x1_save, i)
+            setindex!(vecx, x_save, i)
+            d
         end
 
         if jac_prototype isa Nothing && sparsity isa Nothing
             Jvec = map(calculate_Ji_central, 1:maximum(colorvec))
-            J = ArrayPartition(map(ArrayPartition, zip(Jvec...))...)
+            for (j, column) in zip(1:ncols, Jvec)
+                for (i, el) in zip(1:nrows, column)
+                    J[i, j] = el
+                end
+            end
         else
             @debug "Untested" maxlog = 1
             @inbounds for color_i ∈ 1:maximum(colorvec)
@@ -213,7 +221,6 @@ function finite_difference_jacobian(
                     dx = (vecfx1-vecfx)/(2epsilon)
                     Ji = _make_Ji(J,rows_index,cols_index,dx,colorvec,color_i,nrows,ncols)
                     J = J + Ji
-
                 end
             end
         end

@@ -85,7 +85,7 @@ function alloc_DF(x::ArrayPartition{<:AbstractQuantity, <:Tuple} , F)
     @debug "" jprot[2,1] maxlog=2
     @debug "" jprot[2,2] maxlog=2
     #(([[NaN]], [[NaN]s]))], ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Quantity{Float64,  ᵀ⁻¹, Unitfu.FreeUnits{(s⁻¹,),  ᵀ⁻¹, nothing}}}}, Vector{Vector{Float64}}}}[ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Quantity{Float64,  ᵀ⁻¹, Unitfu.FreeUnits{(s⁻¹,),  ᵀ⁻¹, nothing}}}}, Vector}}(([[NaN]s⁻¹], [[NaN]]))]))
-    @debug "" jprot isa MatrixMixedCandidate maxlog=2
+    @debug "" jprot isa MixedCandidate maxlog=2
     jprot
 end
 
