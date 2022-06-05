@@ -1,17 +1,25 @@
 module MechGlueDiffEqBase
-import Base: similar
+import Base: similar, getindex, setindex!
 import Unitfu: AbstractQuantity, Quantity, ustrip, norm, unit, zero, numtype
-import Unitfu: Dimensions, FreeUnits
+import Unitfu: Dimensions, FreeUnits, uconvert, NoUnits, DimensionlessQuantity
 import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2
-import DiffEqBase: calculate_residuals, @muladd
+import DiffEqBase: calculate_residuals, @muladd, __solve, BVProblem
+import BoundaryValueDiffEq
+using BoundaryValueDiffEq: Shooting
 using RecursiveArrayTools
-import OrdinaryDiffEq.FiniteDiff: compute_epsilon, finite_difference_derivative, default_relstep
-import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache
-import Base: show, summary, print, setindex
-using Base: array_summary
+import OrdinaryDiffEq.FiniteDiff: compute_epsilon, finite_difference_derivative
+import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache, default_relstep
+import Base: show, summary, print, setindex, size, ndims, \, IndexStyle, axes
+using Base: array_summary, throw_boundserror
 using OrdinaryDiffEq.FiniteDiff: _vec
 import OrdinaryDiffEq.ArrayInterface
-import NLSolversBase: alloc_DF
+import NLSolversBase: alloc_DF, OnceDifferentiable, x_of_nans
+using NLSolversBase: f!_from_f, df!_from_df, fdf!_from_fdf
+import LinearAlgebra
+using LinearAlgebra: require_one_based_indexing, istril, istriu, lu, wrapperop, MulAddMul
+import LinearAlgebra: mul!, *
+using LinearAlgebra: Diagonal, LowerTriangular, UpperTriangular, AdjOrTransAbsVec, Transpose
+using LinearAlgebra: generic_matvecmul!
 export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantity
 export norm , ArrayPartition, similar, zero, compute_epsilon
 export jacobian_prototype_zero, jacobian_prototype_nan
@@ -20,7 +28,10 @@ export MixedCandidate, convert_to_array, JacobianCache
 export numtype, alloc_DF, mixed_array_trait, convert_to_mixed
 export MatSqMut, VecMut, NotMixed, NotMixed, Single, Empty
 export is_square_matrix_mutable, is_vector_mutable_stable
+export OnceDifferentiable
+# TODO: wash list, 'using' over 'import'
 
+# Extended imported functions from base are not currently exported.
 
 # This is identical to what DiffEqBase defines for Unitful
 value(x::Type{AbstractQuantity{T,D,U}}) where {T,D,U} = T
@@ -92,6 +103,10 @@ end
 include("io_traits_conversion.jl")
 include("derivatives.jl")
 include("jacobian_prototypes.jl")
+include("once_differentiable.jl")
+include("multiply_divide.jl")
+include("devutils.jl")
+include("solve_extension.jl")
 
 
 # KISS pre-compillation to reduce loading times

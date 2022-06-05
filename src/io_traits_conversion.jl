@@ -43,8 +43,16 @@ struct Empty <: Mixed end
 mixed_array_trait(::T) where {T<:AbstractArray} = NotMixed()             # Fallback
 mixed_array_trait(::ArrayPartition{Union{}, Tuple{}}) = Empty()          # Covers N=0, see https://docs.julialang.org/en/v1/manual/methods/#Tuple-and-NTuple-arguments
 mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{N, RW(N)}}) where {N} = MatSqMut() 
-mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{1, RW(1)}}) = Single()  # Covers N = 1
-mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{N, E}}) where {N} = VecMut()
+#mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{1, RW(1)}}) = Single()  # Covers N = 1
+mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{N, E}}) where {N} = N == 1 ? Single() : VecMut()
+# Same as above, but called with `typeof(A)`. USeful because Julia base use this way of calling in IndexStyle()
+mixed_array_trait(::Type{<:AbstractArray}) = NotMixed()             # Fallback
+mixed_array_trait(::Type{<:ArrayPartition{Union{}, Tuple{}}}) = Empty()          # Covers N=0, see https://docs.julialang.org/en/v1/manual/methods/#Tuple-and-NTuple-arguments
+mixed_array_trait(::Type{<:ArrayPartition{<:Q, <:NTuple{N, RW(N)} where {N}}}) = MatSqMut()
+#mixed_array_trait(::Type{<:ArrayPartition{<:Q, <:NTuple{1, RW(1)}}}) = Single()  # Covers N = 1
+mixed_array_trait(::Type{<:ArrayPartition{<:Q, <:NTuple{N, E}}}) where {N} = N == 1 ? Single() : VecMut()
+
+
 is_square_matrix_mutable(M) = mixed_array_trait(M) isa MatSqMut
 is_vector_mutable_stable(v) = mixed_array_trait(v) isa VecMut
 
@@ -52,6 +60,8 @@ is_vector_mutable_stable(v) = mixed_array_trait(v) isa VecMut
 ############
 # Conversion
 ############
+vpack(x) = [x]
+vpack(x::DimensionlessQuantity) = [uconvert(NoUnits, x)]
 """
     convert_to_mixed(A::AbstractArray{<:Number})
     -> nested mutable ArrayPartition (Mixed)
@@ -62,16 +72,20 @@ function convert_to_mixed(A::AbstractArray{<:Number})
     if is_square_matrix_mutable(A) || is_vector_mutable_stable(A)
         A
     elseif ndims(A) == 2
+        @assert size(A)[1] > 1 "Cannot convert to mixed from row vectors"
         ArrayPartition(map(eachrow(A)) do rw
-            ArrayPartition(map(rw) do el
-                [el]
-            end...)
+            ArrayPartition(map(vpack, rw)...)
         end...)::MixedCandidate
     elseif ndims(A) == 1
-        ArrayPartition(map(x-> [x], A)...)
+#        ArrayPartition(map(x-> [x], A)...)
+         ArrayPartition(map(vpack, A)...)
     else
         throw(DimensionMismatch())
     end
+end
+function convert_to_mixed(A::Transpose{T, <:ArrayPartition}) where T
+    apa = convert_to_array(A.parent)
+    convert_to_mixed(copy(transpose(apa))) # Copy removes laziness
 end
 
 """
@@ -98,27 +112,84 @@ julia> reshape(convert(Array{Any}, M2), (2, 2))'
 ```
 
 """
-function convert_to_array(A::AbstractArray)
+function convert_to_array(A)
     if A isa Array
         A
     else
-        m = length(A.x)
-        n = length(A.x[1])
-        if n != 1
-            X = Array{Any, 2}(undef, m, n)
-            for i = 1:m
-                # Square. Can easily be dropped to extend functionality.
-                @assert n == length(A.x[i]) 
-                for j = 1:n
-                    X[i, j] = A.x[i][j]
-                end
-            end
-            X
-        else
-            Vector{Any}(A)
-        end
+        convert_to_array(mixed_array_trait(A), A)
     end
 end
+function convert_to_array(::MatSqMut, A::ArrayPartition{T, S}) where {T, S}
+    m = length(A.x)
+    n = length(A.x[1])
+    X = Array{T, 2}(undef, m, n)
+    for i = 1:m
+        # Square. Can easily be dropped to extend functionality.
+        @assert n == length(A.x[i]) 
+        for j = 1:n
+            X[i, j] = A.x[i][j]
+        end
+    end
+    X
+end
+function convert_to_array(::VecMut, A::ArrayPartition{T, S}) where {T, S}
+    Vector{T}(A)
+end
+function convert_to_array(::NotMixed, A::Transpose{T, <:ArrayPartition}) where {T}
+    apa = convert_to_array(A.parent)
+    copy(transpose(apa)) # Copy removes laziness
+end
+function convert_to_array(::Mixed, A)
+    throw(InexactError(:convert_to_array, Array, A))
+    A
+end
+##########
+# Indexing
+##########
+size(A::MatrixMixedCandidate) = size_of_mixed(A, mixed_array_trait(A))
+size_of_mixed(A, ::MatSqMut) = size(convert_to_array(A))
+size_of_mixed(A, ::T) where {T<:Mixed } = (length(A),)
+size(A::AdjOrTransAbsVec{T,S}) where {T, S <: MatrixMixedCandidate} = reverse(size(A.parent))
+ndims(A::MatrixMixedCandidate) = ndims_of_mixed(A, mixed_array_trait(A))
+ndims_of_mixed(::MatrixMixedCandidate, ::MatSqMut) = 2
+ndims_of_mixed(::AbstractArray{T,N}, ::S) where {T, N, S<:Mixed } = N
+axes(A::AdjOrTransAbsVec{T,S}) where {T, S <: MatrixMixedCandidate} = reverse(axes(A.parent))
+
+# getindex
+Base.@propagate_inbounds function getindex(A::AdjOrTransAbsVec{T,S}, i::Int, j::Int) where {T, S <: MixedCandidate}
+    @debug "getindex " S i j mixed_array_trait(A.parent)
+    getindex_of_transposed_mixed(mixed_array_trait(A.parent), A, i, j)
+end
+getindex_of_transposed_mixed(::MatSqMut, A, i, j ) = A.parent[j, i]
+function getindex_of_transposed_mixed(::VecMut, A, i, j )
+    @assert i == 1 
+    A.parent[j]
+end
+getindex_of_transposed_mixed(::S, A, i, j) where {S<:Mixed } = throw_boundserror(A, (i, j))
+
+
+# setindex!
+Base.@propagate_inbounds function setindex!(A::AdjOrTransAbsVec{T,S}, v, i::Int, j::Int) where {T, S <: MixedCandidate}
+    @debug "setindex! " v i j S mixed_array_trait(A.parent)
+    setindex!_of_transposed_mixed(mixed_array_trait(A.parent), A, v, i, j)
+end
+setindex!_of_transposed_mixed(::MatSqMut, A, v, i, j ) = setindex!(A.parent, v, j, i)
+function setindex!_of_transposed_mixed(::VecMut, A, v, i, j )
+    @assert i == 1
+    setindex!(A.parent, v, j)
+end
+setindex!_of_transposed_mixed(::S, A, v, i, j) where {S<:Mixed } = throw_boundserror(A, (i, j))
+
+# index style
+# Because: IndexStyle(transpose(typeof([1 2;3 4]))) -> IndexCartesian()
+# This is (likely) used by the fallback `show`` methods
+function _IndexStyle(::Type{<:AdjOrTransAbsVec{T,S} where {T, S <: MixedCandidate}}) 
+    @show "IndexStyle" 
+    IndexStyle_of_transposed_mixed(mixed_array_trait(A.parent))
+end
+IndexStyle_of_transposed_mixed(::MatSqMut) = IndexCartesian()
+IndexStyle_of_transposed_mixed(::S) where {S<:Mixed} = IndexLinear()
+
 
 ##########################
 # IO nested ArrayPartition

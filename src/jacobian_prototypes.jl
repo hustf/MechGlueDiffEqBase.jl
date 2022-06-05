@@ -74,22 +74,6 @@ function jacobian_prototype_nan(x::E, vecfx::Vector{<:Q})
     jacobian_prototype_nan(ArrayPartition(x...), ArrayPartition(vecfx...))
 end
 
-function alloc_DF(x::ArrayPartition{<:AbstractQuantity, <:Tuple} , F)
-    @debug "alloc_DF" maxlog=2
-    @debug "" x maxlog = 2
-    jprot = jacobian_prototype_nan(x, F)
-    @debug "" x maxlog=2
-    @debug "" F maxlog=2
-    @debug "" jprot[1,1] maxlog=2
-    @debug "" jprot[1,2] maxlog=2
-    @debug "" jprot[2,1] maxlog=2
-    @debug "" jprot[2,2] maxlog=2
-    #(([[NaN]], [[NaN]s]))], ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Quantity{Float64,  ᵀ⁻¹, Unitfu.FreeUnits{(s⁻¹,),  ᵀ⁻¹, nothing}}}}, Vector{Vector{Float64}}}}[ArrayPartition{Quantity{Float64}, Tuple{Vector{Vector{Quantity{Float64,  ᵀ⁻¹, Unitfu.FreeUnits{(s⁻¹,),  ᵀ⁻¹, nothing}}}}, Vector}}(([[NaN]s⁻¹], [[NaN]]))]))
-    @debug "" jprot isa MixedCandidate maxlog=2
-    jprot
-end
-
-
 # We avoid overloading type generators as far as possible,
 # but this seems necessary in order to target 
 # NLSolverBase/src/oncedifferentiable.jl/OnceDifferentiable:94
@@ -104,6 +88,8 @@ function JacobianCache(
     inplace    :: Union{Val{T3},Type{T3}} = Val(true),
     colorvec = 1:length(x1),
     sparsity = nothing) where {T<:AbstractQuantity, T1, T2, T3}
+
+    throw("Here we are!")
 
     @debug "JacobianCache T"  T maxlog=2
     @debug returntype
