@@ -106,7 +106,7 @@ end
     tspan = (0.0, 60)s
     u₀ = ArrayPartition([x₀(), y₀(), v₀x(), v₀y()])
     prob = ODEProblem(f,u₀,tspan)
-    @test @inferred(f(ArrayPartition(u₀/s), u₀, :p, 1.0s)) isa ArrayPartition
+    @test @inferred(f(u₀/s, u₀, :p, 1.0s)) isa ArrayPartition
 
     algs = [Euler(),Midpoint(),Heun(),Ralston(),RK4(),SSPRK104(),SSPRK22(),SSPRK33(),
         SSPRK43(),SSPRK432(),BS3(),BS5(),DP5(),DP8(),Feagin10(),Feagin12(),

@@ -6,9 +6,13 @@ using MechanicalUnits.Unitfu: DimensionError
 using OrdinaryDiffEq.FiniteDiff: finite_difference_derivative, default_relstep
 using OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache, finite_difference_jacobian!
 import OrdinaryDiffEq.ArrayInterface
+using Base: BroadcastStyle
+import MechGlueDiffEqBase.RecursiveArrayTools
+using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle
+using MechGlueDiffEqBase: Broadcast.combine_styles, Broadcast.result_style
 @import_expand(cm, kg, s)
 ####################
-# Epsilon with units
+# A Epsilon with units
 ####################
 #     compute_epsilon(Val(:central}, x::T, relstep::Real, absstep::Quantity, dir=nothing)
 @test compute_epsilon(Val(:central), 1.0kg, 0.001, 0.001kg, nothing) === 0.001kg
@@ -22,7 +26,7 @@ import OrdinaryDiffEq.ArrayInterface
 
 
 #######################################
-# Univariate finite difference, units
+# B Univariate finite difference, units
 #######################################
 # Derivative, univariate real argument with units, out-of-place, dimensionless derivative
 @test let 
@@ -41,7 +45,7 @@ end ≈ 2.0kg
 
 
 #############################################
-# Mutable fixed-length mixed arrays. 
+# C Mutable fixed-length mixed arrays. 
 # We want these to be inferrable,
 # which the standard matrix type, e.g. 
 #     Any[1 2kg; 3 4] 
@@ -51,146 +55,228 @@ end ≈ 2.0kg
 #############################################
 
 let 
-    M0 = ArrayPartition()
-    M1 = ArrayPartition(ArrayPartition([1]))
-    M1u = ArrayPartition(ArrayPartition([1kg]))
-    M2 = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]))
-    M2u = ArrayPartition(ArrayPartition([1]kg, [2]s), ArrayPartition([3]s, [4]kg))
-    M3 = ArrayPartition(ArrayPartition([1], [2], [3]), ArrayPartition([4], [5], [6]), ArrayPartition([7], [8], [9]))
-    M3u = ArrayPartition(ArrayPartition([1]kg, [2]s, [3]kg), ArrayPartition([4]s, [5]kg, [6]s), ArrayPartition([7]kg, [8]s, [9]kg*s))
-    Mrect = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]), ArrayPartition([5], [6]))
-    Vs = ArrayPartition([1.0])
-    Vu = ArrayPartition([1.0]s⁻¹, [2.0]s⁻², [3.0])
-    @test M0 isa MixedCandidate
-    @test M1 isa MixedCandidate
-    @test M2 isa MixedCandidate
-    @test M2u isa MixedCandidate
-    @test M3 isa MixedCandidate
-    @test M3u isa MixedCandidate
-    @test !(Mrect isa MixedCandidate)
-    @test Vs isa MechGlueDiffEqBase.RW(N) where N
-    @test Vu isa MechGlueDiffEqBase.RW(N) where N
-    @test Vu isa MechGlueDiffEqBase.RW(N) where N
-    @test !is_square_matrix_mutable(M0)
-    @test is_square_matrix_mutable(M1)
-    @test is_square_matrix_mutable(M2)
-    @test is_square_matrix_mutable(M2u)
-    @test is_square_matrix_mutable(M3)
-    @test is_square_matrix_mutable(M3u)
-    @test !is_square_matrix_mutable(Mrect)
-    @test !is_square_matrix_mutable(Vs)
-    @test !is_square_matrix_mutable(Vu)
+    # n:dimensionless d: dimension, M: Matrix, V: Vector, E: empty, 0-3: size, i: immutable
+    E = ArrayPartition()
+    Mn1 = ArrayPartition(ArrayPartition([1]))
+    Mu1 = ArrayPartition(ArrayPartition([1kg]))
+    Mn2 = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]))
+    Mu2 = ArrayPartition(ArrayPartition([1]kg, [2]s), ArrayPartition([3]s, [4]kg))
+    Mn3 = ArrayPartition(ArrayPartition([1], [2], [3]), ArrayPartition([4], [5], [6]), ArrayPartition([7], [8], [9]))
+    Mu3 = ArrayPartition(ArrayPartition([1]kg, [2]s, [3]kg), ArrayPartition([4]s, [5]kg, [6]s), ArrayPartition([7]kg, [8]s, [9]kg*s))
+    Mn3x2 = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]), ArrayPartition([5], [6]))
+    Vn1 = ArrayPartition([1.0])
+   ### Vn3 = ArrayPartition([1.0], [2.0], [3.0])
+    Vu3 = ArrayPartition([1.0]s⁻¹, [2.0]s⁻², [3.0])
+    @test E isa MixedCandidate
+    @test Mn1 isa MixedCandidate
+    @test Mn2 isa MixedCandidate
+    @test Mu2 isa MixedCandidate
+    @test Mn3 isa MixedCandidate
+    @test Mu3 isa MixedCandidate
+    @test !(Mn3x2 isa MixedCandidate)
+    @test Vn1 isa MechGlueDiffEqBase.RW(N) where N
+    @test Vu3 isa MechGlueDiffEqBase.RW(N) where N
+    @test !is_square_matrix_mutable(E)
+    @test is_square_matrix_mutable(Mn1)
+    @test is_square_matrix_mutable(Mn2)
+    @test is_square_matrix_mutable(Mu2)
+    @test is_square_matrix_mutable(Mn3)
+    @test is_square_matrix_mutable(Mu3)
+    @test !is_square_matrix_mutable(Mn3x2)
+    @test !is_square_matrix_mutable(Vn1)
+    @test !is_square_matrix_mutable(Vu3)
 
-    @test !is_vector_mutable_stable(M0)
-    @test !is_vector_mutable_stable(M1)
-    @test !is_vector_mutable_stable(M2)
-    @test !is_vector_mutable_stable(M2u)
-    @test !is_vector_mutable_stable(M3)
-    @test !is_vector_mutable_stable(M3u)
-    @test !is_vector_mutable_stable(Mrect)
-    @test !is_vector_mutable_stable(Vs)
-    @test is_vector_mutable_stable(Vu)
+    @test !is_vector_mutable_stable(E)
+    @test !is_vector_mutable_stable(Mn1)
+    @test !is_vector_mutable_stable(Mn2)
+    @test !is_vector_mutable_stable(Mu2)
+    @test !is_vector_mutable_stable(Mn3)
+    @test !is_vector_mutable_stable(Mu3)
+    @test !is_vector_mutable_stable(Mn3x2)
+    @test !is_vector_mutable_stable(Vn1)
+    @test is_vector_mutable_stable(Vu3)
 
     # trait from type
-    @test !is_square_matrix_mutable(typeof(M0))
-    @test is_square_matrix_mutable(typeof(M1))
-    @test is_square_matrix_mutable(typeof(M2))
-    @test is_square_matrix_mutable(typeof(M2u))
-    @test is_square_matrix_mutable(typeof(M3))
-    @test is_square_matrix_mutable(typeof(M3u))
-    @test !is_square_matrix_mutable(typeof(Mrect))
-    @test !is_square_matrix_mutable(typeof(Vs))
-    @test !is_square_matrix_mutable(typeof(Vu))
+    @test !is_square_matrix_mutable(typeof(E))
+    @test is_square_matrix_mutable(typeof(Mn1))
+    @test is_square_matrix_mutable(typeof(Mn2))
+    @test is_square_matrix_mutable(typeof(Mu2))
+    @test is_square_matrix_mutable(typeof(Mn3))
+    @test is_square_matrix_mutable(typeof(Mu3))
+    @test !is_square_matrix_mutable(typeof(Mn3x2))
+    @test !is_square_matrix_mutable(typeof(Vn1))
+    @test !is_square_matrix_mutable(typeof(Vu3))
 
-    @test !is_vector_mutable_stable(typeof(M0))
-    @test !is_vector_mutable_stable(typeof(M1))
-    @test !is_vector_mutable_stable(typeof(M2))
-    @test !is_vector_mutable_stable(typeof(M2u))
-    @test !is_vector_mutable_stable(typeof(M3))
-    @test !is_vector_mutable_stable(typeof(M3u))
-    @test !is_vector_mutable_stable(typeof(Mrect))
-    @test !is_vector_mutable_stable(typeof(Vs))
-    @test is_vector_mutable_stable(typeof(Vu))
+    @test !is_vector_mutable_stable(typeof(E))
+    @test !is_vector_mutable_stable(typeof(Mn1))
+    @test !is_vector_mutable_stable(typeof(Mn2))
+    @test !is_vector_mutable_stable(typeof(Mu2))
+    @test !is_vector_mutable_stable(typeof(Mn3))
+    @test !is_vector_mutable_stable(typeof(Mu3))
+    @test !is_vector_mutable_stable(typeof(Mn3x2))
+    @test !is_vector_mutable_stable(typeof(Vn1))
+    @test is_vector_mutable_stable(typeof(Vu3))
 
-    @test mixed_array_trait(M0) == Empty()
+    @test mixed_array_trait(E) == Empty()
     @test mixed_array_trait([1, 2]) == NotMixed()
-    @test mixed_array_trait(M1) == MatSqMut()
-    @test mixed_array_trait(Vs) == Single()
-    @test mixed_array_trait(Vu) == VecMut()
+    @test mixed_array_trait(Mn1) == MatSqMut()
+    @test mixed_array_trait(Vn1) == Single()
+    @test mixed_array_trait(Vu3) == VecMut()
 
-    @test mixed_array_trait(typeof(M0)) == Empty()
+    @test mixed_array_trait(typeof(E)) == Empty()
     @test mixed_array_trait(typeof([1, 2])) == NotMixed()
-    @test mixed_array_trait(typeof(M1)) == MatSqMut()
-    @test mixed_array_trait(typeof(Vs)) == Single()
-    @test mixed_array_trait(typeof(Vu)) == VecMut()
+    @test mixed_array_trait(typeof(Mn1)) == MatSqMut()
+    @test mixed_array_trait(typeof(Vn1)) == Single()
+    @test mixed_array_trait(typeof(Vu3)) == VecMut()
 
-    @test repr(M0, context = :color=>true) == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
-    @test repr(:"text/plain", M0, context = :color=>true) == "()\"#undef\""
-    @test repr(M1, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
-    @test repr(:"text/plain", M1, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}}}}}:\n 1"
-    @test repr(M2, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
-    @test repr(:"text/plain", M2, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}:\n 1  2\n 3  4"
-    @test repr(M2u, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
-    @test repr(:"text/plain", M2u, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}}}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m\n  3\e[36ms\e[39m  4\e[36mkg\e[39m"
-    @test repr(M3, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1 2 3; 4 5 6; 7 8 9]\e[36m)\e[39m"
-    @test repr(:"text/plain", M3, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}}}:\n 1  2  3\n 4  5  6\n 7  8  9"
-    @test repr(M3u, context = :color=>true) =="\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
-    @test repr(:"text/plain", M3u, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ∙ ᵀ, Unitfu.FreeUnits{(\e[36mkg\e[39m, \e[36ms\e[39m),  ᴹ∙ ᵀ, nothing}}}}}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m              3\e[36mkg\e[39m\n  4\e[36ms\e[39m  5\e[36mkg\e[39m               6\e[36ms\e[39m\n 7\e[36mkg\e[39m   8\e[36ms\e[39m  9\e[36mkg\e[39m∙\e[36ms\e[39m"
-    @test repr(Mrect, context = :color=>true) == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}((\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6)))"
-    @test repr(:"text/plain", Mrect, context = :color=>true) == "(\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6))"
-    @test repr(Vs, context = :color=>true) == "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
-    @test repr(:"text/plain", Vs, context = :color=>true) == "Single-element (discouraged) ArrayPartition(ArrayPartition(Vector{<:Number})):\n 1.0"
-    @test repr(Vu, context = :color=>true) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
-    @test repr(:"text/plain", Vu, context = :color=>true) == "3-element mutable ArrayPartition:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n                3.0"
-    tM0 = transpose(M0)
-    tM1 = transpose(M1)
-    tM1u = transpose(M1u)
-    tM2 = transpose(M2)
-    tM2u = transpose(M2u)
-    tM3 = transpose(M3)
-    tM3u = transpose(M3u)
-    tMrect = transpose(Mrect)
-    tVs = transpose(Vs)
-    tVu = transpose(Vu)
+    @test repr(E, context = :color=>true) == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
+    @test repr(:"text/plain", E, context = :color=>true) == "()\"#undef\""
+    @test sprint(io -> print(IOContext(io, :color => true), E)) == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
+    @test repr(Mn1, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
+    @test repr(:"text/plain", Mn1, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}}}}}:\n 1"
+    @test sprint(io -> print(IOContext(io, :color => true), Mn1)) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
+    @test repr(Mn2, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
+    @test repr(:"text/plain", Mn2, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}:\n 1  2\n 3  4"
+    @test sprint(io -> print(IOContext(io, :color => true), Mn2)) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
+    @test repr(Mu2, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
+    @test repr(:"text/plain", Mu2, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}}}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m\n  3\e[36ms\e[39m  4\e[36mkg\e[39m"
+    @test sprint(io -> print(IOContext(io, :color => true), Mu2)) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
+    @test repr(Mn3, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1 2 3; 4 5 6; 7 8 9]\e[36m)\e[39m"
+    @test repr(:"text/plain", Mn3, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}}}:\n 1  2  3\n 4  5  6\n 7  8  9"
+    @test repr(Mu3, context = :color=>true) =="\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
+    @test repr(:"text/plain", Mu3, context = :color=>true) == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, Unitfu.FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, Unitfu.FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ∙ ᵀ, Unitfu.FreeUnits{(\e[36mkg\e[39m, \e[36ms\e[39m),  ᴹ∙ ᵀ, nothing}}}}}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m              3\e[36mkg\e[39m\n  4\e[36ms\e[39m  5\e[36mkg\e[39m               6\e[36ms\e[39m\n 7\e[36mkg\e[39m   8\e[36ms\e[39m  9\e[36mkg\e[39m∙\e[36ms\e[39m"
+    @test sprint(io -> print(IOContext(io, :color => true), Mu3)) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
+    @test repr(Mn3x2, context = :color=>true) == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}((\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6)))"
+    @test repr(:"text/plain", Mn3x2, context = :color=>true) == "(\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6))"
+    @test sprint(io -> print(IOContext(io, :color => true), Mn3x2)) == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}((\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6)))"
+    @test repr(Vn1, context = :color=>true) == "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
+    @test repr(:"text/plain", Vn1, context = :color=>true) == "Single-element (discouraged) ArrayPartition(ArrayPartition(Vector{<:Number})):\n 1.0"
+    @test repr(Vu3, context = :color=>true) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
+    @test repr(:"text/plain", Vu3, context = :color=>true) == "3-element mutable ArrayPartition:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n                3.0"
+    @test sprint(io -> print(IOContext(io, :color => true), Vu3)) == "\e[36mconvert_to_mixed(\e[39m1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0\e[36m)\e[39m"
+    @inferred transpose(E);
+    @inferred transpose(Mn1)
+    @inferred transpose(Mu1)
+    @inferred transpose(Mn2)
+    @inferred transpose(Mu2)
+    @inferred transpose(Mn3)
+    @inferred transpose(Mu3)
+    @inferred transpose(Mn3x2)
+    @inferred transpose(Vn1)
+    @inferred transpose(Vu3)
 end
+#let     # Inferred broadcast of mixed matrices
+    # n:dimensionless d: dimension, M: Matrix, V: Vector, E: empty, 0-3: size, i: immutable, 
+    # a: array as normal, b: lazy broadcast prototype with function
+    Vn1 = ArrayPartition([1.0])
+    Vn3 = ArrayPartition([1.0], [2.0], [3.0])
+    Vu3 = ArrayPartition([1.0]s⁻¹, [2.0]s⁻², [3.0])
+    Mu1 = ArrayPartition(ArrayPartition([1kg]))
+    Mn2 = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]))
+    Mu2 = ArrayPartition(ArrayPartition([1]kg, [2]), ArrayPartition([3], [4]cm))
+    M2a = convert_to_array(Mn2)
+    axes(Vu3) == (Base.OneTo(3),)
+    axes(Mn2) == (Base.OneTo(2), Base.OneTo(2))
+    ndims(Vu3) == 1
+    ndims(Mn2) == 2
+    broadcast_style_Vu3 = BroadcastStyle(typeof(Vu3))
+    @test broadcast_style_Vu3 == ArrayPartitionStyle{Base.Broadcast.DefaultArrayStyle{1}}()
+    broadcast_style_Mn2 = BroadcastStyle(typeof(Mn2))
+    @test broadcast_style_Mn2 == ArrayPartitionStyle{Base.Broadcast.DefaultArrayStyle{2}}()
+    broadcast_style_Mu2 = BroadcastStyle(typeof(Mu2))
+    @test broadcast_style_Mu2 == ArrayPartitionStyle{Base.Broadcast.DefaultArrayStyle{2}}()
+    @test Base.broadcastable(Vu3)  == Vu3
+    @test  Base.broadcastable(Mn2)  == Mn2
+    Vn1b = Base.broadcasted(x-> 2x, Vn1)
+    Vn3b = Base.broadcasted(x-> 2x, Vn3)
+    Vu3b = Base.broadcasted(x-> 2x, Vu3)
+    Mu1b = Base.broadcasted(x-> 2x, Mu1)
+    Mn2b = Base.broadcasted(x-> 2x, Mn2)
+    Mu2b = Base.broadcasted(x-> 2x, Mu2)
+    M2ab = Base.broadcasted(x-> 2x, M2a)
 
-# Indexing, mutating, type guarantee
+
+
+
+
+    Vn1x = Base.Broadcast.combine_axes(Vn1b.args...)
+    Vn3x = Base.Broadcast.combine_axes(Vn3b.args...)
+    Vu3x = Base.Broadcast.combine_axes(Vu3b.args...)
+    Mu1x = Base.Broadcast.combine_axes(Mu1b.args...)
+    Mn2x = Base.Broadcast.combine_axes(Mn2b.args...)
+    Mu2x = Base.Broadcast.combine_axes(Mu2b.args...)
+    M2ax = Base.Broadcast.combine_axes(M2ab.args...)
+
+    Vu3l = Base.Broadcast.Broadcasted{typeof(broadcast_style_Vu3)}(Vu3b.f, Vu3b.args, Vu3x)
+    Mn2l = Base.Broadcast.Broadcasted{typeof(broadcast_style_Mn2)}(Mn2b.f, Mn2b.args, Mn2x)
+    Mu2l = Base.Broadcast.Broadcasted{typeof(broadcast_style_Mu2)}(Mn2b.f, Mu2b.args, Mu2x)
+
+    copy(Vu3l)
+    copy(Mn2l)
+    with_logger(Logging.ConsoleLogger(stderr, Logging.Debug;meta_formatter = locfmt)) do
+        copy(Mu2l)
+    end
+    Base.Broadcast.instantiate(Vu3p)
+
+
+
+    Vn1p = Base.materialize(Vn1b)
+    Vn3p = Base.materialize(Vn3b)
+    Vu3p = Base.materialize(Vu3b)
+    Mu1p = Base.materialize(Mu1b)
+    Mn2p = Base.materialize(Mn2b)
+    Mu2p = Base.materialize(Mu2b)
+    M2ap = Base.materialize(M2ab)
+
+    @inferred Base.broadcasted(x -> x , Vu3)
+    @inferred Base.broadcasted(x -> x, Mn2)
+    @inferred broadcast(x -> x, Vn1)
+    @inferred broadcast(x -> x, Vu3)
+    @inferred broadcast(x -> x, Mu1)
+    @inferred broadcast(x -> x, Mn2)
+    @inferred broadcast(x -> x, Mu2)
+    BroadcastStyle(typeof(ArrayPartition(1,2,3)))
+    BroadcastStyle(typeof(Vu3))
+#end
+######################################
+# D Indexing, mutating, type guarantee
+######################################
 let 
-    M3 = ArrayPartition(ArrayPartition([1], [2], [3]), ArrayPartition([4], [5], [6]), ArrayPartition([7], [8], [9]))
-    M3u = ArrayPartition(ArrayPartition([1]kg, [2]s, [3]kg), ArrayPartition([4]s, [5]kg, [6]s), ArrayPartition([7]kg, [8]s, [9]kg*s))
-    @test M3[2, 3] == 6
-    @test M3u[2, 3] == 6s
-    M3[2,3] = 7
-    @test M3[2, 3] == 7
-    @test_throws InexactError M3[2, 3] = 8.5
-    M3u[2,3] = 7s
-    @test M3u[2, 3] == 7s
-    @test_throws DimensionError M3u[2, 3] = 8cm
+    Mn3 = ArrayPartition(ArrayPartition([1], [2], [3]), ArrayPartition([4], [5], [6]), ArrayPartition([7], [8], [9]))
+    Mu3 = ArrayPartition(ArrayPartition([1]kg, [2]s, [3]kg), ArrayPartition([4]s, [5]kg, [6]s), ArrayPartition([7]kg, [8]s, [9]kg*s))
+    @test Mn3[2, 3] == 6
+    @test Mu3[2, 3] == 6s
+    Mn3[2,3] = 7
+    @test Mn3[2, 3] == 7
+    @test_throws InexactError Mn3[2, 3] = 8.5
+    Mu3[2,3] = 7s
+    @test Mu3[2, 3] == 7s
+    @test_throws DimensionError Mu3[2, 3] = 8cm
 end
 
-############
-# Conversion 
-############
+##############
+# E Conversion 
+##############
 let
     A2 = [1 2; 3 4]
-    M2 = convert_to_mixed(A2)
-    @test convert_to_array(M2) == A2
+    Mn2 = convert_to_mixed(A2)
+    @test convert_to_array(Mn2) == A2
     A2u = [1.0kg 2s; 3s 4kg]
-    M2u = convert_to_mixed(A2u)
-    @test convert_to_array(M2u) == A2u
+    Mu2 = convert_to_mixed(A2u)
+    @test convert_to_array(Mu2) == A2u
     A3u = [1kg 2 3s; 4s 5kg 6; 7kg 8 9s] 
-    M3u = convert_to_mixed(A3u)
-    @test convert_to_array(M3u) == A3u
-    Vu = ArrayPartition([1.0]s⁻¹, [2.0]s⁻², [3.0])
-    Vu[3] = 4.0
+    Mu3 = convert_to_mixed(A3u)
+    @test convert_to_array(Mu3) == A3u
+    Vu3 = ArrayPartition([1.0]s⁻¹, [2.0]s⁻², [3.0])
+    Vu3[3] = 4.0
     Vc = convert_to_mixed([1.0s⁻¹, 2.0s⁻², 3.0])
     Vc[3] = 4.0
-    @test typeof(Vc) == typeof(Vu)
-    @test Vc[3] == Vu[3]
+    @test typeof(Vc) == typeof(Vu3)
+    @test Vc[3] == Vu3[3]
 end
 
 ###########################################
-# Jacobians with 'ordinary' x, f(x) types
+# 1 Jacobians with 'ordinary' x, f(x) types
 # Default Finitediff.jl behaviour unchanged
 ###########################################
 struct ImmutableVector <: DenseVector{Float64}
@@ -223,7 +309,7 @@ let
     @test Jc1.sparsity === nothing
 end
 ####################################
-# Create mutable Jacobian prototypes
+# 2 Create mutable Jacobian prototypes
 ####################################
 
 # Dimensionless, mutable input
@@ -308,7 +394,7 @@ end)) == 9
 end)) == 9
 
 #########################################
-# Prototype mutable Jacobian, NaN values
+# 3 Prototype mutable Jacobian, NaN values
 # Note that (NaN == NaN) == false ! 
 #########################################
 @test sum(isnan.(let
@@ -615,10 +701,10 @@ end ./ [-2.0kg∙s  10.0kg∙s²
                             NaN  1.0]; atol = 1e-6, nans = true)
 
 
-##############################
-# Jacobian prototype as called
+################################
+# 7 Jacobian prototype as called
 # from NLSolverbase. 
-##############################
+################################
 
 @test sum(isnan.(let
     x = ArrayPartition([0.0], [1.5])
@@ -640,4 +726,6 @@ end)) == 4
     # Jacobian prototype is a 2x2 matrix of NaN{Float64} with units
     alloc_DF(x, F)
 end) .+ [NaN∙kg∙cm⁻¹ NaN∙kg∙s⁻¹; NaN NaN∙cm∙s⁻¹])) == 4
+
+
 nothing

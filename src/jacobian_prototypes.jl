@@ -89,7 +89,7 @@ function JacobianCache(
     colorvec = 1:length(x1),
     sparsity = nothing) where {T<:AbstractQuantity, T1, T2, T3}
 
-    throw("Here we are!")
+    throw("Here we are! Or are we?")
 
     @debug "JacobianCache T"  T maxlog=2
     @debug returntype

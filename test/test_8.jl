@@ -1,12 +1,12 @@
-# Test OnceDifferentiable construction and display with mutable ArrayParititions
+# Test adaptions to NLSolversBase, NLSolve
 using Test
 import Logging
 using Logging: LogLevel, with_logger, ConsoleLogger
-using MechGlueDiffEqBase # exports ArrayPartition
-using OrdinaryDiffEq
-using BoundaryValueDiffEq: BVProblem,  GeneralMIRK4, Shooting
-using MechanicalUnits: @import_expand, ∙, ustrip, unit
-import NLSolversBase
+using MechGlueDiffEqBase
+using MechGlueDiffEqBase: nlsolve, converged
+using MechanicalUnits: @import_expand, ∙
+import NLsolve
+
 @import_expand(cm, kg, s)
 """
 Debug formatter, highlight NLSolversBase. To use:
@@ -41,154 +41,96 @@ function locfmt(level::LogLevel, _module, group, id, file, line)
     !isempty(suffix) && (suffix = "@ " * suffix)
     return color, prefix, suffix
 end
-function simplependulum´!(u´, u , p, t)
-    g, L = p
-    θ  = u[1]
-    θ´ = u[2]
-    u´[1] = θ´
-    u´[2] = -(g/L) * sin(θ) # θ´´
-    @debug "simplependulum´!" typeof(u´) maxlog=1
-    u´
+######################
+# 1 Utilities, NLsolve
+######################
+@test_throws MechGlueDiffEqBase.NLsolve.IsFiniteException check_isfinite([1,NaN])
+@test_throws MechGlueDiffEqBase.NLsolve.IsFiniteException check_isfinite([1,Inf])
+@test_throws MechGlueDiffEqBase.NLsolve.IsFiniteException check_isfinite(
+    convert_to_mixed([1,Inf]))
+@test_throws MechGlueDiffEqBase.NLsolve.IsFiniteException check_isfinite(
+    convert_to_mixed([1s,Inf]))
+@test_throws MechGlueDiffEqBase.NLsolve.IsFiniteException check_isfinite([1 2;Inf 4])
+@test_throws MechGlueDiffEqBase.NLsolve.IsFiniteException check_isfinite(
+    convert_to_mixed([1 2;Inf 4]))
+@test_throws MechGlueDiffEqBase.NLsolve.IsFiniteException check_isfinite(
+    convert_to_mixed([1s 2;Inf 4]))
+#############################
+# 2 Newton trust region solve
+#   Vectors
+#############################
+function f_2by2!(F, x)
+    F[1] = (x[1]+3)*(x[2]^3-7)+18
+    F[2] = sin(x[2]*exp(x[1])-1)
+end
+F1 = [10.0, 20.0]
+# Evaluate implicitly at known zero
+f_2by2!(F1, [0,1]) 
+@test F1 == [0.0, 0.0]
+# OnceDifferentiable contains both f and df. We give prototype arguments.
+xprot1 = [NaN, NaN]
+df1 = OnceDifferentiable(f_2by2!, xprot1, F1; autodiff = :central)
+
+@test NLsolve.NewtonTrustRegionCache(df1) isa NLsolve.AbstractSolverCache
+@test MechGlueDiffEqBase.LenNTRCache(df1) isa NLsolve.AbstractSolverCache
+# Start at a point outside zero, iterate arguments until function value is zero.
+r = nlsolve(df1, [ -0.5, 1.4], method = :trust_region, autoscale = true)
+@test converged(r)
+# Did we find the correct arguments?
+@test r.zero ≈ [ 0, 1]
+@test r.iterations == 4
+#############################
+# 2 Newton trust region solve
+#  ArrayPartition
+#############################
+F2 = convert_to_mixed([10.0, 20.0])
+# Evaluate implicitly at known zero
+f_2by2!(F2, convert_to_mixed([0,1])) 
+@test F2 == convert_to_mixed([0.0, 0.0])
+# df includes both f_2by2, and its 'derivative'. We supply argument prototypes to both.
+xprot2 = convert_to_mixed([NaN, NaN])
+df2 = OnceDifferentiable(f_2by2!, xprot2, F2; autodiff = :central)
+@test NLsolve.NewtonTrustRegionCache(df2) isa NLsolve.AbstractSolverCache
+@test MechGlueDiffEqBase.LenNTRCache(df2) isa NLsolve.AbstractSolverCache
+# Start at a point outside zero, iterate arguments until function value is zero.
+
+with_logger(Logging.ConsoleLogger(stderr, Logging.Debug;meta_formatter = locfmt)) do
+    nlsolve(df2, convert_to_mixed([ -0.5; 1.4]), method = :trust_region, autoscale = true)
 end
 
-function bca!(residual, u, p, t)
-    # the solution at the middle of the time span should be 0
-    mid = searchsortedfirst(t, t[end] / 2)
-    # residual is an ODESolution.
-    residual[1] = u[mid][1]
-    # the solution at the end of the time span should be π/2
-    residual[2] = u[end][1] - π / 2
-    @debug "bca!" string(u[1]) string(residual) maxlog = 1
-    residual
+r = nlsolve(df2, convert_to_mixed([ -0.5, 1.4]), method = :trust_region, autoscale = true)
+@test converged(r)
+# Did we find the correct arguments?
+@test r.zero ≈ [ 0, 1]
+@test r.iterations == 4
+
+#############################
+# 3 Newton trust region cache
+#  ArrayPartition dimensional
+#############################
+function f_2by2a!(F, x)
+    F[1] = (x[1]+3kg)*(x[2]^3-7s^3)+18kg∙s³      
+    F[2] = sin(x[2]*exp(x[1]/kg)/s-1)s
 end
+F3 = convert_to_mixed([10.0kg∙s³, 20.0s])
+# Evaluate implicitly at known zero
+f_2by2a!(F3, convert_to_mixed([0kg,1s])) 
+@test F3 == convert_to_mixed([0.0kg∙s³, 0.0s])
+# df includes both f_2by2, and its 'derivative'. We supply argument prototypes to both.
+xprot3 = convert_to_mixed([NaN∙kg, NaN∙s])
+df3 = OnceDifferentiable(f_2by2a!, xprot3, F3; autodiff = :central)
+@test_throws MethodError NLsolve.NewtonTrustRegionCache(df3)
+@test MechGlueDiffEqBase.LenNTRCache(df3) isa NLsolve.AbstractSolverCache
+# Start at a point outside zero, iterate arguments until function value is zero.
+#=
+#with_logger(Logging.ConsoleLogger(stderr, Logging.Debug;meta_formatter = locfmt)) do 
+#nlsolve(df3, convert_to_mixed([ -0.5∙kg; 1.4∙s]), method = :trust_region, autoscale = true)
+#end
 
-alg =  Shooting(Tsit5())
-
-# The internal loss function defined by BoundaryValueDiffEq, used to minimize 
-# the residual would look somewhat like this.
-f!(bvp) = function (resid, minimizer)
-    tmp_prob = remake(bvp, u0=minimizer)
-    sol = solve(tmp_prob, alg.ode_alg;dtmax = 0.05)
-    bca!(resid, sol, nothing, sol.t)
-    resid
-end
-
-
-
-#############################################################
-# Vector types - simplest but hard to compile with quantities
-#############################################################
-x1 = [-π/4, π/8]  # θ, θ´
-bvp1 = BVProblem{true}(simplependulum´!, bca!, x1, (0.0, 1.5), (9.81, 1.0))
-
-resid1 = [0.0, 0.0] # Residual dummy
-# NLSolversBase\src\objective_types\oncedifferentiable.jl:23 (-> :98)
-df1 = OnceDifferentiable(f!(bvp1), x1, resid1)
-# Is the intitalization of OnceDifferentiable as expected?
-@test sum(isnan.(df1.x_f)) == 2
-@test sum(isnan.(df1.x_df)) == 2
-@test df1.F isa Vector{Float64}
-@test df1.DF isa Matrix{Float64}
-@test sum(iszero.(df1.F)) == 2
-@test sum(isnan.(df1.DF)) == 4
-@test zero.(convert_to_array(df1.F)) == [0.0, 0.0]
-@test zero.(convert_to_array(df1.DF)) == [0.0 0.0; 0.0 0.0]
-# Is the residual and Jacobian of residual as expected?
-#    Update resid 'manually', using the initial df values.
-prob1 = ODEProblem(simplependulum´!, bvp1.u0, bvp1.tspan, bvp1.p) 
-solguess1 = solve(prob1, Tsit5(), dtmax = 0.05);
-bca!(resid1, solguess1, NaN, solguess1.t) 
-@test isapprox(resid1, [0.6, -π/2], atol = 0.1)
-#    Check if OnceDifferentiable finds the same residual internally.
-@test isapprox(resid1, NLSolversBase.value!!(df1, x1))
-#    Jacobian of the residual
-@test isapprox(
-    convert_to_array(NLSolversBase.jacobian!!(df1, x1)), 
-        [-0.5458791359906279 0.2554698462543077; -0.5503793078424869 -0.3188487145980475])
-# Minimize the residual. Is the solution satisfying boundary conditions?
-sol1 = solve(bvp1, alg, dtmax = 0.05);
-@test isapprox(bca!(resid1, sol1, nothing, sol1.t), [0.0, 0.0]; atol = 1e-6)
-   
-
-########################
-# Mutable ArrayPartition 
-########################
-x2 = ArrayPartition([x1[1]], [x1[2]])  # θ, θ´
-bvp2 = BVProblem{true}(simplependulum´!, bca!, x2, (0.0, 1.5), (9.81, 1.0))
-resid2 = ArrayPartition([0.0], [0.0])
-# NLSolversBase\src\objective_types\oncedifferentiable.jl:23 (-> :98)
-df2 = OnceDifferentiable(f!(bvp2), x2, resid2)
-# a) Is the intitalization of OnceDifferentiable as expected?
-@test sum(isnan.(df2.x_f)) == 2
-@test sum(isnan.(df2.x_df)) == 2
-@test is_vector_mutable_stable(df2.F)
-@test is_square_matrix_mutable(df2.DF)
-@test sum(iszero.(df2.F)) == 2
-@test sum(isnan.(df2.DF)) == 4
-@test zero.(convert_to_array(df2.F)) == [0.0, 0.0]
-@test zero.(convert_to_array(df2.DF)) == [0.0 0.0; 0.0 0.0]
-# b) Is the residual and Jacobian of residual as expected?
-#    Update resid 'manually', using the initial df values.
-prob2 = ODEProblem(simplependulum´!, bvp2.u0, bvp2.tspan, bvp2.p) 
-solguess2 = solve(prob2, Tsit5(), dtmax = 0.05);
-bca!(resid2, solguess2.u, NaN, solguess2.t) 
-@test isapprox(resid2, [0.6, -π/2], atol = 0.05)
-#    Check if OnceDifferentiable finds the same residual internally.
-@test isapprox(resid2, NLSolversBase.value!!(df2, x2))
-#    Jacobian of the residual
-@test isapprox(
-    convert_to_array(NLSolversBase.jacobian!!(df2, x2)), 
-        [-0.5458791359906279 0.2554698462543077; -0.5503793078424869 -0.3188487145980475])
-# c) Minimize the residual. Is the solution satisfying boundary conditions?
-sol2 = solve(bvp2, alg, dtmax = 0.05);
-@test isapprox(bca!(resid2, sol2, nothing, sol2.t), [0.0, 0.0]; atol = 1e-6)
-
-
-
-#######################################
-# Mutable ArrayPartition with dimension 
-#######################################
-x3 = ArrayPartition([x1[1]], [x1[2]]s⁻¹)  # θ, θ´
-bvp3 = BVProblem(simplependulum´!, bca!, x3, (0.0, 1.5)s, (981cm/s², 100.0cm))
-resid3 = ArrayPartition([0.0], [0.0]) # Dimensionless loss function, not the hardest case
-
-# NLSolversBase\src\objective_types\oncedifferentiable.jl:23 (-> :98)
-df3 = OnceDifferentiable(f!(bvp3), x3, resid3)
-# a) Is the intitalization of OnceDifferentiable as expected?
-@test sum(isnan.(df3.x_f)) == 2
-@test unit.(df3.x_f)[2] == s⁻¹
-@test sum(isnan.(df3.x_df)) == 2
-@test unit.(df3.x_df)[2] == s⁻¹
-@test is_vector_mutable_stable(df3.F)
-@test is_square_matrix_mutable(df3.DF)
-@test sum(iszero.(df3.F)) == 2
-@test sum(isnan.(df3.DF)) == 4
-@test zero.(convert_to_array(df3.F)) == [0.0, 0.0]
-@test zero.(convert_to_array(df3.DF)) == [0.0 0.0s; 0.0 0.0s]
-# b) Is the residual and Jacobian of residual as expected?
-#    Update resid 'manually', using the initial df values.
-prob3 = ODEProblem(simplependulum´!, bvp3.u0, bvp3.tspan, bvp3.p) 
-solguess3 = solve(prob3, Tsit5(), dtmax = 0.05);
-bca!(resid3, solguess3.u, NaN, solguess3.t) 
-@test isapprox(resid3, [0.6, -π/2], atol = 0.05)
-#    Check if OnceDifferentiable finds the same residual internally.
-@test isapprox(resid3, NLSolversBase.value!!(df3, x3))
-#    Jacobian of the residual
-#@test isapprox(
-#    convert_to_array(NLSolversBase.jacobian!!(df3, x3)), 
-#        [-0.5458791359906279 0.2554698462543077s; -0.5503793078424869 -0.3188487145980475s])
-# c) Minimize the residual. Is the solution satisfying boundary conditions?
-#sol3 = solve(bvp3, alg, dtmax = 0.05);
-#@test isapprox(bca!(resid3, sol3, nothing, sol3.t), [0.0, 0.0]; atol = 1e-6)
-
-
-
-
-
-# Temp
-with_logger(Logging.ConsoleLogger(stderr, Logging.Debug;meta_formatter = locfmt)) do 
-    NLSolversBase.jacobian!!(df3, x3)
-end
-df3.x_df = x3
-@enter df3.df(df3.DF, df3.x_df)
-
+r = nlsolve(df3, convert_to_mixed([ -0.5∙kg; 1.4∙s]), method = :trust_region, autoscale = true)
+@test converged(r)
+# Did we find the correct arguments?
+@test r.zero ≈ [ 0, 1]
+@test r.iterations == 4
+=#
+nothing

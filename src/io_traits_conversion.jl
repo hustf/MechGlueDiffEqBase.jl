@@ -73,9 +73,11 @@ function convert_to_mixed(A::AbstractArray{<:Number})
         A
     elseif ndims(A) == 2
         @assert size(A)[1] > 1 "Cannot convert to mixed from row vectors"
-        ArrayPartition(map(eachrow(A)) do rw
+        Am = ArrayPartition(map(eachrow(A)) do rw
             ArrayPartition(map(vpack, rw)...)
-        end...)::MixedCandidate
+        end...)
+        @assert Am isa MixedCandidate "Cannot convert_to_mixed from size $(size(A)) $(typeof(A))"
+        Am::MixedCandidate
     elseif ndims(A) == 1
 #        ArrayPartition(map(x-> [x], A)...)
          ArrayPartition(map(vpack, A)...)
@@ -222,10 +224,13 @@ function print_as_mixed(io::IO, ::VecMut, v::RW(N)) where N
     buf = IOBuffer()
     ioc = IOContext(buf, IOContext(io).dict)
     col = get(ioc, :unitsymbolcolor, :cyan)
-    printstyled(ioc, color = col, "$N-element mutable ")
-    print(ioc, "ArrayPartition(")
+    #printstyled(ioc, color = col, "$N-element mutable ")
+    #print(ioc, "ArrayPartition(")
+    printstyled(ioc, color = col, "convert_to_mixed(")
     prefix = String(take!(buf))
-    Base.show_vector(io::IO, v, prefix, ')')
+    printstyled(ioc, color = col, ")")
+    postfix = String(take!(buf))
+    Base.show_vector(io::IO, v, prefix, postfix)
 end
 
 function print_as_mixed(io::IO, ::Single, v)
@@ -240,6 +245,7 @@ function print_as_mixed(io::IO, ::Single, v)
     Base.show_vector(io::IO, v, prefix, "]))")
 end
 
+print_as_mixed(io::IO, ::Union{NotMixed, Empty}, v) = invoke(print, Tuple{typeof(io), Any}, io, v)
 
 # Overloads RecursiveArrayTools.jl:26, which invokes showing this as 'Any'..., with too much header info:
 Base.show(io::IO, A::MixedCandidate) = Base.show(io, mixed_array_trait(A), A)
