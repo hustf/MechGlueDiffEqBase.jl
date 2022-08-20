@@ -1,5 +1,5 @@
 module MechGlueDiffEqBase
-import Base: similar, getindex, setindex!, inv, +, -
+import Base: similar, getindex, setindex!, inv, +, -, zip
 import Unitfu: AbstractQuantity, Quantity, ustrip, norm, unit, zero, numtype
 import Unitfu: Dimensions, FreeUnits, uconvert, NoUnits, DimensionlessQuantity
 import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2, remake
@@ -7,12 +7,14 @@ import DiffEqBase: calculate_residuals, @muladd, __solve, BVProblem, solve
 import BoundaryValueDiffEq
 using BoundaryValueDiffEq: Shooting
 using RecursiveArrayTools
-using RecursiveArrayTools: ArrayPartitionStyle, npartitions, unpack
+import RecursiveArrayTools.unpack
+using RecursiveArrayTools: ArrayPartitionStyle, npartitions, unpack_args
 import OrdinaryDiffEq.FiniteDiff: compute_epsilon, finite_difference_derivative
-import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache, default_relstep
+import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache
+using OrdinaryDiffEq.FiniteDiff: default_relstep, fdtype_error
 import Base: show, summary, print, setindex, size, ndims
 import Base: \, IndexStyle, axes, BroadcastStyle, Broadcast.combine_styles, copy
-using Base: array_summary, throw_boundserror
+using Base: array_summary, throw_boundserror, broadcasted
 using OrdinaryDiffEq.FiniteDiff: _vec
 import OrdinaryDiffEq.ArrayInterface
 import NLSolversBase

@@ -3,13 +3,14 @@ using Test
 using MechGlueDiffEqBase
 using MechanicalUnits: @import_expand, ∙
 using MechanicalUnits.Unitfu: DimensionError
+import OrdinaryDiffEq.FiniteDiff
 using OrdinaryDiffEq.FiniteDiff: finite_difference_derivative, default_relstep
 using OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache, finite_difference_jacobian!
 import OrdinaryDiffEq.ArrayInterface
-using Base: BroadcastStyle
+import Base: Broadcast
+using Base.Broadcast: Broadcasted, result_style, combine_styles, DefaultArrayStyle, BroadcastStyle
 import MechGlueDiffEqBase.RecursiveArrayTools
-using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle
-using MechGlueDiffEqBase: Broadcast.combine_styles, Broadcast.result_style
+using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle, unpack
 @import_expand(cm, kg, s)
 ####################
 # A Epsilon with units
@@ -165,68 +166,65 @@ let
     @inferred transpose(Vn1)
     @inferred transpose(Vu3)
 end
-#let     # Inferred broadcast of mixed matrices
+#let     # Inferred broadcast of mixed matrices, also mapping.
     # n:dimensionless d: dimension, M: Matrix, V: Vector, E: empty, 0-3: size, i: immutable, 
-    # a: array as normal, b: lazy broadcast prototype with function
+    # a: array as normal, b: lazy broadcast prototype with function, B lazy broadcast prototype 
+    # with two-argument function
+    Vu3a = [1.0s⁻¹, 2.0s⁻², 3.0]
     Vn1 = ArrayPartition([1.0])
     Vn3 = ArrayPartition([1.0], [2.0], [3.0])
-    Vu3 = ArrayPartition([1.0]s⁻¹, [2.0]s⁻², [3.0])
+    Vu3 = convert_to_mixed(Vu3a)
     Mu1 = ArrayPartition(ArrayPartition([1kg]))
     Mn2 = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]))
-    Mu2 = ArrayPartition(ArrayPartition([1]kg, [2]), ArrayPartition([3], [4]cm))
+    Mu2a = [1kg 2; 3 4cm]
+    Mu2 = convert_to_mixed(Mu2a)
     M2a = convert_to_array(Mn2)
-    axes(Vu3) == (Base.OneTo(3),)
-    axes(Mn2) == (Base.OneTo(2), Base.OneTo(2))
-    ndims(Vu3) == 1
-    ndims(Mn2) == 2
+    Mu3 = ArrayPartition(ArrayPartition([1]kg, [2]s, [3]kg), ArrayPartition([4]s, [5]kg, [6]s), ArrayPartition([7]kg, [8]s, [9]kg*s))
+
+    @test axes(Vu3) == (Base.OneTo(3),)
+    @test axes(Mn2) == (Base.OneTo(2), Base.OneTo(2))
+    @test ndims(Vu3) == 1
+    @test ndims(Mn2) == 2
     broadcast_style_Vu3 = BroadcastStyle(typeof(Vu3))
-    @test broadcast_style_Vu3 == ArrayPartitionStyle{Base.Broadcast.DefaultArrayStyle{1}}()
+    @test broadcast_style_Vu3 == ArrayPartitionStyle{DefaultArrayStyle{1}}()
     broadcast_style_Mn2 = BroadcastStyle(typeof(Mn2))
-    @test broadcast_style_Mn2 == ArrayPartitionStyle{Base.Broadcast.DefaultArrayStyle{2}}()
+    @test broadcast_style_Mn2 == ArrayPartitionStyle{DefaultArrayStyle{2}}()
     broadcast_style_Mu2 = BroadcastStyle(typeof(Mu2))
-    @test broadcast_style_Mu2 == ArrayPartitionStyle{Base.Broadcast.DefaultArrayStyle{2}}()
-    @test Base.broadcastable(Vu3)  == Vu3
-    @test  Base.broadcastable(Mn2)  == Mn2
-    Vn1b = Base.broadcasted(x-> 2x, Vn1)
-    Vn3b = Base.broadcasted(x-> 2x, Vn3)
-    Vu3b = Base.broadcasted(x-> 2x, Vu3)
-    Mu1b = Base.broadcasted(x-> 2x, Mu1)
-    Mn2b = Base.broadcasted(x-> 2x, Mn2)
-    Mu2b = Base.broadcasted(x-> 2x, Mu2)
-    M2ab = Base.broadcasted(x-> 2x, M2a)
+    @test broadcast_style_Mu2 == ArrayPartitionStyle{DefaultArrayStyle{2}}()
+    @test typeof(Base.broadcastable(Vu3))  == typeof(Vu3)
+    @test  typeof(Base.broadcastable(Mn2))  == typeof(Mn2)
+    @test  typeof(Base.broadcastable(Mu2))  == typeof(Mu2)
 
-
-
+    @test  combine_styles(2, Mu2a) != combine_styles(2, Mu2)
+    @test  combine_styles(Mu2a, 2) != combine_styles(2, Mu2)
+    @test combine_styles(Mu2a, 2) == combine_styles(2, Mu2a)
+    @test combine_styles(Mu2, 2) == combine_styles(2, Mu2)
+    Vn1b = Base.broadcasted(x -> 2x, Vn1)
+    Vn3b = Base.broadcasted(x -> 2x, Vn3)
+    Vu3ab = Base.broadcasted(x -> 2x, Vu3a)
+    Vu3b = Base.broadcasted(x -> 2x, Vu3)
+    Mu1b = Base.broadcasted(x -> 2x, Mu1)
+    Mn2b = Base.broadcasted(x -> 2x, Mn2)
+    Mu2b = Base.broadcasted(x -> 2x, Mu2)
+    M2ab = Base.broadcasted(x -> 2x, M2a)
 
 
     Vn1x = Base.Broadcast.combine_axes(Vn1b.args...)
     Vn3x = Base.Broadcast.combine_axes(Vn3b.args...)
     Vu3x = Base.Broadcast.combine_axes(Vu3b.args...)
+    Vu3ax = Base.Broadcast.combine_axes(Vu3ab.args...)
     Mu1x = Base.Broadcast.combine_axes(Mu1b.args...)
     Mn2x = Base.Broadcast.combine_axes(Mn2b.args...)
     Mu2x = Base.Broadcast.combine_axes(Mu2b.args...)
     M2ax = Base.Broadcast.combine_axes(M2ab.args...)
-
+    @test Vu3x === Vu3ax
+    @test M2ax === Mu2x
     Vu3l = Base.Broadcast.Broadcasted{typeof(broadcast_style_Vu3)}(Vu3b.f, Vu3b.args, Vu3x)
     Mn2l = Base.Broadcast.Broadcasted{typeof(broadcast_style_Mn2)}(Mn2b.f, Mn2b.args, Mn2x)
     Mu2l = Base.Broadcast.Broadcasted{typeof(broadcast_style_Mu2)}(Mn2b.f, Mu2b.args, Mu2x)
 
-    copy(Vu3l)
-    copy(Mn2l)
-    with_logger(Logging.ConsoleLogger(stderr, Logging.Debug;meta_formatter = locfmt)) do
-        copy(Mu2l)
-    end
-    Base.Broadcast.instantiate(Vu3p)
-
-
-
-    Vn1p = Base.materialize(Vn1b)
-    Vn3p = Base.materialize(Vn3b)
-    Vu3p = Base.materialize(Vu3b)
-    Mu1p = Base.materialize(Mu1b)
-    Mn2p = Base.materialize(Mn2b)
-    Mu2p = Base.materialize(Mu2b)
-    M2ap = Base.materialize(M2ab)
+    @test copy(Vu3l) == convert_to_mixed(2Vu3a)
+    @test copy(Mu2l) == convert_to_mixed(2Mu2a)
 
     @inferred Base.broadcasted(x -> x , Vu3)
     @inferred Base.broadcasted(x -> x, Mn2)
@@ -235,8 +233,106 @@ end
     @inferred broadcast(x -> x, Mu1)
     @inferred broadcast(x -> x, Mn2)
     @inferred broadcast(x -> x, Mu2)
-    BroadcastStyle(typeof(ArrayPartition(1,2,3)))
-    BroadcastStyle(typeof(Vu3))
+
+    @test map(x -> 2x, Mu2) == convert_to_mixed([2kg 4; 6 8cm])
+    @test map(x -> 2x, Mu3) == convert_to_mixed([ 2kg 4s 6kg
+        8s  10kg  12s
+      14kg   16s  18kg∙s])
+    @inferred map(x -> 2x, Mu2)
+    @inferred map(x -> 2x, Mu3)
+    @test broadcast(x -> 2x, M2a) == [2 4; 6 8]
+    @test broadcast(x -> 2x, Vu3) == convert_to_mixed(2Vu3a)
+    @test broadcast(x -> 2x, Mu2) == convert_to_mixed(2Mu2a)
+    @test Mu2 == Mu2
+
+    Vn1B = Base.broadcasted((x, y)-> 2x * y, 2, Vn1)
+    Vn3B = Base.broadcasted((x, y)-> 2x * y, 2, Vn3)
+    Vu3aB = Base.broadcasted((x, y)-> 2x * y, 2, Vu3a)
+    Vu3B = Base.broadcasted((x, y)-> 2x * y, 2, Vu3)
+    Mu1B = Base.broadcasted((x, y)-> 2x * y, 2, Mu1)
+    Mn2B = Base.broadcasted((x, y)-> 2x * y, 2, Mn2)
+    Mu2B = Base.broadcasted((x, y)-> 2x * y, Mu2, Mu2)
+    M2aB = Base.broadcasted((x, y)-> 2x * y, 2, M2a)
+    Mu2Ba = Base.broadcasted((x, y)-> 2x * y, Mu2, M2a)
+
+
+    @test unpack(Vn1B, 1).args[2][1] == Vn1[1]
+    @test unpack(Vn3B, 1).args[2][1] == Vn3[1]
+    @test unpack(Vu3aB, 1).args[2][1] == Vu3a[1]
+    @test unpack(Vu3B, 1).args[2][1] ==  Vu3[1]
+    @test unpack(Mu1B, 1).args[2][1, 1] ==  Mu1[1, 1]
+    @test unpack(Mn2B, 1).args[2][1, 1] ==  Mn2[1, 1]
+    @test unpack(Mu2B, 1).args[2][1, 1] ==  Mu2[1, 1]
+    @test unpack(M2aB, 1).args[2][1, 1] ==  M2a[1, 1]
+    
+    @test broadcast((x, y)-> 2x * y, 2, Vu3) == convert_to_mixed([4.0s⁻¹, 8.0s⁻², 12.0])
+    @test broadcast((x, y)-> 2x * y, 2, Mu2a) == Number[4kg 8; 12 16cm]
+    @test broadcast((x, y)-> 2x * y, 2, Mu2) == convert_to_mixed([4kg 8; 12 16cm])
+    @test broadcast((x, y)-> x * y, Mu2, Mu2) == convert_to_mixed([1kg² 4; 9 16cm²])
+    @test broadcast((x, y)-> x * y, Mu2a, Mu2) == convert_to_mixed([1kg² 4; 9 16cm²])
+    @test broadcast((x, y)-> x * y, Mu2, Mu2a) == convert_to_mixed([1kg² 4; 9 16cm²])
+
+    type_mM = Broadcasted{ArrayPartitionStyle{Style}} where {Style <: DefaultArrayStyle{2}}
+    @test !(typeof(Vu3) <: type_mM)
+    @test !(typeof(M2aB) <: type_mM)
+    @test typeof(Mn2B) <: type_mM
+    @test typeof(Mu2B) <: type_mM
+    type_mM2 = Broadcasted{ArrayPartitionStyle{Style}, Axes, F, Tuple{T1, T2}} where {Style <: DefaultArrayStyle{2}, Axes, F, T1, T2}
+    @test !(typeof(Vu3) <: type_mM2)
+    @test !(typeof(M2aB) <: type_mM2)
+    @test typeof(Mn2B) <: type_mM2
+    @test typeof(Mu2B) <: type_mM2
+    @test !(typeof(Mn2b) <: type_mM2)
+
+    @inferred copy(Vn1B)
+    @inferred copy(Vn3B)
+    @inferred Vector{Number} copy(Vu3aB)
+    @inferred copy(Vu3B)
+    @inferred copy(Mu1B)
+    @inferred copy(Mn2B)
+    @inferred copy(Mu2B)
+    @inferred copy(M2aB)
+
+    @test broadcast(*, 2, Mu2) == convert_to_mixed(2 .* Mu2a)
+    @test broadcast(*, Mu2, 2) == convert_to_mixed(2 .* Mu2a)
+    @test broadcast(*, Mu2, Mu2) == convert_to_mixed(Mu2a.* Mu2a)
+    @inferred 2 .* Mu2
+    @inferred Mu2 .* 2   
+    @inferred Mu2 .* Mu2
+    @inferred ArrayPartition Mu2 .^ 2
+
+    # Zip with same order, when pairs of mixed matrix and normal matrix are zipped.
+    # As a consequence of zipping to common ordering, we can compare matrices of
+    # the mixed and normal types with an == sign.
+    @test vec(collect(zip(Mu2))) == vec(collect(zip(Mu2)))
+    @test vec(collect(zip(Mu2))) !== vec(collect(zip(Mu2a)))
+    @test vec(collect(zip(Mu2))) == Tuple{Quantity{Int64}}[(1,)kg, (2,), (3,), (4,)cm]
+    @test vec(collect(zip(Mu2, Mu2a))) == vec(collect(zip(Mu2a, Mu2)))
+    @test vec(collect(zip(Mu2, Mu2))) == vec(collect(zip(Mu2a, Mu2)))
+    # TODO find how to collect to a non-transposed form
+    Mu2z = zip(Mu2, Mu2)
+    M2az = zip(M2a, M2a)
+    @test collect(zip(Mu2, Mu2))[1,2] == collect(zip(Mu2a, Mu2a))[2,1]
+    # Map 1 arg
+    @test is_vector_mutable_stable(map(x-> 1.2x, Vu3))
+    @test map(x-> 1.2x, Vu3) == [1.2s⁻¹, 2.4s⁻², 3.5999999999999996]
+    @inferred map(x-> 1.2x, Vu3)
+    @inferred map(x-> 1.2x, Mu2)
+    is_square_matrix_mutable(map(x-> 1.2x, Mu2))
+
+    # Map 2 arg - not inferrable, recommend broadcasting
+
+    @test map((x,y) -> x * y * kg, Vu3, convert_to_mixed([1, 2])) == [1.0, 4.0/s]kg∙s⁻¹
+    @test map((x,y) -> x * y * kg, convert_to_mixed([1, 2]), Vu3) == [1.0, 4.0/s]kg∙s⁻¹
+    @test map((x,y) -> x * y * kg, Vu3, Vu3) == [1.0kg∙s⁻², 4.0kg∙s⁻⁴, 9.0kg]
+    @test map((x,y) -> x * y * kg, Mu2a, Mu2a) == [1kg³ 4kg; 9kg 16kg∙cm²]
+    @test map((x,y) -> x * y * kg, Mu2, Mu2) == [1kg³ 4kg; 9kg 16kg∙cm²]
+    @test map((x,y) -> x * y * kg, Mu2, Mu2a) == [1kg³ 4kg; 9kg 16kg∙cm²]
+    @test map((x,y) -> x * y * kg, Mu2, Mu2a) == [1kg³ 4kg; 9kg 16kg∙cm²]
+        # TODO shape of combination.
+    @test map((x,y) -> x * y * kg, Mu2a, Mu2) == [1kg³ 4kg; 9kg 16kg∙cm²]
+    f = (x,y) -> x * y * kg
+    @enter map(f, Mu2a, Mu2)
 #end
 ######################################
 # D Indexing, mutating, type guarantee
@@ -590,9 +686,11 @@ end
 #                         δf₂/ δx₁     δf₂/ δx₂]
 # =>    J([1.0, 2.0]) =  [-2    10
 #                          0    2]
+
+#=
 isapprox(let 
-    f = x -> ArrayPartition(x[1]^2 - 2x[1]∙x[2] + x[2]^3, 2x[2])
-    x = ArrayPartition(1.0, 2.0)
+    f = x -> ArrayPartition([x[1]^2 - 2x[1]∙x[2] + x[2]^3], [2x[2]])
+    x = ArrayPartition([1.0], [2.0])
     convert_to_array(finite_difference_jacobian(f, x))
 end, [-2.0 10.0
        0.0 2.0]; atol = 1e-6)
@@ -604,6 +702,7 @@ end, [-2.0 10.0
     convert_to_array(finite_difference_jacobian(f, x, fdtype))
 end, [-2.0 10.0 
        0.0 2.0]; atol = 1e-6)
+
 # g) fdtype Val(:central), using ArrayPartition, dimensionless.
 @test isapprox(let 
     f = x -> ArrayPartition(x[1]^2 - 2x[1]∙x[2] + x[2]^3, 2x[2])
@@ -612,6 +711,7 @@ end, [-2.0 10.0
     convert_to_array(finite_difference_jacobian(f, x, fdtype))
 end, [-2.0 10.0
        0.0 2.0]; atol = 1e-6)
+=#
 
 #########################################
 # 6 With dimensions, using ArrayPartition
@@ -665,7 +765,7 @@ end
 
 # e) finite difference Jacobian matrix, "f(x, y) -> (u,v)", using ArrayPartition, dimensions.
 # Ref. test 5e)
-
+#=
 isapprox(let 
     f = x -> ArrayPartition(x[1]^2∙kg∙s² - 2x[1]∙x[2]∙kg∙s³ + x[2]^3∙kg∙s^6, 2x[2]cm∙s²)
     x = ArrayPartition(1.0s⁻¹    , 2.0s⁻²)
@@ -699,7 +799,7 @@ end ./ [-2.0kg∙s  10.0kg∙s²
          0.0cm∙s   2.0cm∙s²], 
                             [1.0  1.0
                             NaN  1.0]; atol = 1e-6, nans = true)
-
+=#
 
 ################################
 # 7 Jacobian prototype as called

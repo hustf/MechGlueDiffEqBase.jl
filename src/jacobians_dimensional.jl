@@ -38,6 +38,7 @@ function finite_difference_jacobian(f, x::RW(N),
     end
     # Targeting method defined below, which is extending 
     # FiniteDiff\src\jacobians.jl:155.
+    @debug "finite_difference_jaco"
     finite_difference_jacobian(f, x, cache, f_in;
         relstep, absstep, colorvec, sparsity, jac_prototype, dir)
 end
@@ -209,8 +210,8 @@ function finite_difference_jacobian(
             end
         end
     else
-        @debug "Untested" maxlog = 1
-        fdtype_error(returntype)
+        @debug "finite_difference_jacobian " fdtype returntype maxlog = 1
+        fdtype_error(fdtype) # returntype
     end
     J
 end

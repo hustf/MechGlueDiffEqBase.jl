@@ -9,7 +9,7 @@ using MechGlueDiffEqBase # exports ArrayPartition
 using MechGlueDiffEqBase: is_reciprocal_symmetric, mul!
 using MechanicalUnits: @import_expand, ∙, ustrip, unit
 import MechanicalUnits: Unitfu
-using Unitfu: DimensionError
+using MechanicalUnits.Unitfu: DimensionError
 import LinearAlgebra
 @import_expand(dam, cm, kg, s)
 """

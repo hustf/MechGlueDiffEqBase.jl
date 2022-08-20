@@ -186,7 +186,8 @@ setindex!_of_transposed_mixed(::S, A, v, i, j) where {S<:Mixed } = throw_boundse
 # Because: IndexStyle(transpose(typeof([1 2;3 4]))) -> IndexCartesian()
 # This is (likely) used by the fallback `show`` methods
 function _IndexStyle(::Type{<:AdjOrTransAbsVec{T,S} where {T, S <: MixedCandidate}}) 
-    @show "IndexStyle" 
+    @debug "_IndexStyle" 
+    throw("Unused?")
     IndexStyle_of_transposed_mixed(mixed_array_trait(A.parent))
 end
 IndexStyle_of_transposed_mixed(::MatSqMut) = IndexCartesian()
