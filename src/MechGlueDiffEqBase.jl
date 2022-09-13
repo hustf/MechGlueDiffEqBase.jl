@@ -1,14 +1,16 @@
 module MechGlueDiffEqBase
 import Base: similar, getindex, setindex!, inv, +, -, zip
 import Unitfu: AbstractQuantity, Quantity, ustrip, norm, unit, zero, numtype
-import Unitfu: Dimensions, FreeUnits, uconvert, NoUnits, DimensionlessQuantity
-import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2, remake
+import Unitfu: uconvert, dimension
+import Unitfu: Dimensions, Dimension, FreeUnits, NoUnits, DimensionlessQuantity
+import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2, remake, abs2_and_sum
 import DiffEqBase: calculate_residuals, @muladd, __solve, BVProblem, solve
 import BoundaryValueDiffEq
 using BoundaryValueDiffEq: Shooting
 using RecursiveArrayTools
 import RecursiveArrayTools.unpack
 using RecursiveArrayTools: ArrayPartitionStyle, npartitions, unpack_args
+import OrdinaryDiffEq
 import OrdinaryDiffEq.FiniteDiff: compute_epsilon, finite_difference_derivative
 import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache
 using OrdinaryDiffEq.FiniteDiff: default_relstep, fdtype_error
@@ -40,60 +42,53 @@ export OnceDifferentiable, DIMENSIONAL_NLSOLVE, check_isfinite
 
 # TODO: wash list, 'using' over 'import'
 
+# recursive types of ArrayPartition
+include("io_traits_conversion.jl") 
+
 # Extended imported functions from base are not currently exported.
 
+@inline UNITLESS_ABS2(x::Quantity)  = abs2(ustrip(x))
+@inline UNITLESS_ABS2(u::MixedCandidate) = UNITLESS_ABS2(mixed_array_trait(u), u)
+@inline function UNITLESS_ABS2(::VecMut, u::ArrayPartition{<:Quantity{T}}) where T
+    mapreduce(v -> UNITLESS_ABS2(first(v)), + , u.x; init = zero(T))
+end
+@inline function UNITLESS_ABS2(::MatSqMut, u::ArrayPartition{<:Quantity{T}}) where T
+    acc = zero(T)
+    for rw in u.x
+        acc  += UNITLESS_ABS2(VecMut(), rw)
+    end
+    acc
+end
+@inline function UNITLESS_ABS2(::VecMut, u::ArrayPartition{T}) where T <: Real
+    mapreduce(v -> UNITLESS_ABS2(first(v)), + , u.x, init = zero(T))
+end
+@inline function UNITLESS_ABS2(::MatSqMut, u::ArrayPartition{T}) where T <: Real
+    acc = zero(T)
+    for rw in u.x
+        acc  += UNITLESS_ABS2(VecMut(), rw)
+    end
+    acc
+end
+
+
 # This is identical to what DiffEqBase defines for Unitful
-value(x::Type{AbstractQuantity{T,D,U}}) where {T,D,U} = T
+value(x::Type{Quantity{T,D,U}}) where {T,D,U} = T
 
 # This is different from what DiffEqBase defines for Unitful
 value(::Type{<:AbstractQuantity{T,D,U}}) where {T,D,U<:Core.TypeofBottom} = Base.undef_ref_str
-value(x::Q) where {Q<:AbstractQuantity} = ustrip(x)
+value(x::Quantity) = ustrip(x)
 
+# This is identical to what DiffEqBase defines for Unitful.
+@inline ODE_DEFAULT_NORM(u::Quantity, t) = abs(ustrip(u))
 
-# This is identical to what DiffEqBase defines for Unitful
-@inline function ODE_DEFAULT_NORM(u::AbstractArray{<:AbstractQuantity,N},t) where {N}
-    # Support adaptive errors should be errorless for exponentiation
-    sqrt(sum(x->ODE_DEFAULT_NORM(x[1],x[2]),zip((value(x) for x in u),Iterators.repeated(t))) / length(u))
-end
-# This is identical to what DiffEqBase defines for Unitful
-@inline function ODE_DEFAULT_NORM(u::Array{<:AbstractQuantity,N},t) where {N}
-    sqrt(sum(x->ODE_DEFAULT_NORM(x[1],x[2]),zip((value(x) for x in u),Iterators.repeated(t))) / length(u))
-end
-# This is identical to what DiffEqBase defines for Unitful
-@inline function ODE_DEFAULT_NORM(u::AbstractQuantity, t)
-    abs(ustrip(u))
+# For types of ArrayPartition defined in io_traits_conversion.jl
+@inline ODE_DEFAULT_NORM(u::MixedCandidate, t) = ODE_DEFAULT_NORM(mixed_array_trait(u), u, t)
+@inline function ODE_DEFAULT_NORM(::UnionVecSqMut, u, t)
+    un = ustrip.(u)
+    y = sum(abs2, un; init = zero(eltype(un)))
+    sqrt(real(y) / length(un))
 end
 
-@inline function UNITLESS_ABS2(u::AbstractArray{<:AbstractQuantity,N} where N)
-    sum(map(UNITLESS_ABS2, u))
-end
-@inline function UNITLESS_ABS2(u::AbstractArray{Quantity{T},N}) where {N, T}
-    sum(map(UNITLESS_ABS2, u))
-end
-@inline function UNITLESS_ABS2(u::RecursiveArrayTools.ArrayPartition{Quantity})
-    sum(map(UNITLESS_ABS2, u))
-end
-
-@inline function UNITLESS_ABS2(x::T) where T <: AbstractQuantity
-    xul = x / oneunit(T)
-    abs2(xul)
-end
-@inline function UNITLESS_ABS2(x::Quantity{T, D, U}) where {T, D, U}
-    xul = x / oneunit(Quantity{T, D, U})
-    abs2(xul)::T
-end
-
-# Vectors with compatible units, treat as normal
-zero(x::Vector{Quantity{T, D, U}}) where {T,D,U} = fill!(similar(x), zero(Quantity{T, D, U}))
-# Vectors with incompatible units, special inferreable treatment
-function zero(x::Vector{Q}) where {Q<:AbstractQuantity{T, D, U} where {D,U}} where T
-    x0 = copy(x)
-    for i in eachindex(x0)
-        x = x0[i]
-        x0[i] = 0 * x * sign(x)
-    end
-    x0
-end
 
 # Vectors with compatible units, treat as normal
 similar(x::Vector{Quantity{T, D, U}}) where {T,D,U} = Vector{Quantity{T, D, U}}(undef, size(x,1))
@@ -109,7 +104,7 @@ function similar(x::Vector{Q}, S::Type) where {Q<:AbstractQuantity{T, D, U} wher
     x0 = Vector{S}(undef, size(x, 1))
 end
 
-include("io_traits_conversion.jl")
+
 include("broadcast_mixed_matrix.jl")
 include("derivatives_dimensional.jl")
 include("jacobian_prototypes.jl")
@@ -122,57 +117,59 @@ include("utils_dimensional.jl")
 
 
 # KISS pre-compillation to reduce loading times
-# This is simply a boiled-down obfuscated test_4.jl
+# This is simply a boiled-down obfuscated test_013.jl
+# It is commented out because there is no apparent effect.
+#=
+import Unitfu: m, km, s, kg, inch, °, ∙
+    # Constants we don't think we'll change ever
+    x₀ = 0.0km
+    y₀ = 0.0km
+    ø = 15inch
+    ρ = 1.225kg/m^3
+    g = 9.80665m/s^2
 
-import Unitfu: m, s, kg, N, ∙
-let
-    r0ul = [1131.340, -2282.343, 6672.423]
-    r0ul = [1131.340, -2282.343, 6672.423]
-    v0ul = [-5.64305, 4.30333, 2.42879]
-    rv0ul = ArrayPartition(r0ul,v0ul)
-    ODE_DEFAULT_NORM(rv0ul, 0.0)
-    r0 = [1131.340, -2282.343, 6672.423]∙kg
-    v0 = [-5.64305, 4.30333, 2.42879]∙kg/s
-    rv0 = ArrayPartition(r0, v0)
-    ODE_DEFAULT_NORM(rv0, 0.0s)
-    r0 = [1.0kg, 2.0N, 3.0m/s, 4.0m/s]
-    v0 = [1.0kg/s, 2.0N/s, 3.0m/s^2, 4m/s^2]
-    rv0 = ArrayPartition(r0, v0)
-    r0ul = [1131.340, -2282.343, 6672.423]
-    v0ul = [-5.64305, 4.30333, 2.42879]
-    rv0ul = ArrayPartition(r0ul, v0ul)
-    r0 = [1131.340, -2282.343, 6672.423]∙kg
-    r1 = [1kg, 2.0m]
-    zero(r0)
-    zero(r1)
-    rv0 = ArrayPartition(r0)
-    zero(rv0)
-    rv1 = ArrayPartition(r1)
-    zero(rv1)
-    r0 = [1.0kg, -2kg, 3m/s, 4m/s]
-    zero(r0)
-    rv0 = ArrayPartition(r0)
-    zer = zero(rv0)
-    zer == [0.0kg, 0.0kg, 0.0m/s, 0.0m/s]
-    r0 = [1131.340, -2282.343, 6672.423]∙kg
-    simi = similar(r0)
-    rv0 = ArrayPartition(r0)
-    sima = similar(rv0)
-    r0 = [1.0kg, -2kg, 3m/s, 4m/s]
-    similar(r0)
-    rv0 = ArrayPartition(r0)
-    sima = similar(rv0)
-    r0ul = [1131.340, -2282.343, 6672.423]
-    v0ul = [-5.64305, 4.30333, 2.42879]
-    rv0ul = ArrayPartition(r0ul,v0ul)
-    UNITLESS_ABS2(rv0ul)
-    r0 = [1.0kg, 2.0N, 3.0m/s, 4.0m/s]
-    v0 = [1.0kg/s, 2.0N/s, 3.0m/s^2, 4m/s^2]
-    rv0 = ArrayPartition(r0, v0)
-    UNITLESS_ABS2(1.0kg)
-    UNITLESS_ABS2(r0)
-    UNITLESS_ABS2(rv0)
-    nothing
-end
+    # Calculated constants
+    Aₚᵣ = π/4 * ø^2
+    # Constants that we define as functions, because we may
+    # want to modify them later in the same scripting session.
+    α₀()  = 30°
+    v₀()  = 1050m/s
 
+    mₚ()   = 495kg
+    C_s() = 0.4
+    x´₀() = v₀() * cos(α₀())
+    y´₀() = v₀() * sin(α₀())
+
+    # Local tuple initial condition.
+    u₀ = convert_to_mixed(x₀, y₀, x´₀(), y´₀())
+
+
+    # Functions
+    v(vx, vy) = √(vx^2 + vy^2)
+    R(vx, vy) = 0.5∙ρ∙C_s()∙Aₚᵣ∙v(vx, vy)^2
+    α(vx, vy) = atan(vy, vx)
+    Rx(vx, vy) = R(vx, vy) * cos(α(vx, vy))
+    Ry(vx, vy) = R(vx, vy) * sin(α(vx, vy))
+
+
+    # Local tuple, i.e. the interesting degrees of freedom
+    # and their derivatives
+    function  Γ!(u´, u, p, t)
+        x, y, x´, y´ = u
+        # Calculate the acceleration for this step
+        x´´ =     -Rx(x´, y´) / mₚ()
+        y´´ = -1g -Ry(x´, y´) / mₚ()
+        # Output
+        u´ .= x´, y´, x´´, y´´
+        u´
+    end
+
+    function solve_guarded(u₀)
+        # Test the functions
+        Γ!(u₀/s,u₀, nothing, nothing)
+        prob = OrdinaryDiffEq.ODEProblem( Γ!,u₀,(0.0,60)s)
+        solve(prob, OrdinaryDiffEq.Tsit5())
+    end
+    solve_guarded(u₀)
+=#
 end

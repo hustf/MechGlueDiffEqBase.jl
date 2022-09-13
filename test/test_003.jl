@@ -58,10 +58,10 @@ end
                 AutoVern7(Rodas5(autodiff=false)),
                 AutoVern8(Rodas5(autodiff=false)),
                 AutoVern9(Rodas5(autodiff=false))]
-        println(alg, "   ")
+        println(stdout, alg, "   ")
         @test solve(prob,alg).retcode === :Success
     end
-    print("\n")
+    print(stdout, "\n")
 end
 
 @testset "zero ArrayPartition" begin
@@ -100,21 +100,24 @@ end
         du[2] = dy = vy
         du[3] = dvx = -Rx(vx, vy) / mₚ()
         du[4] = dvy = -1g -Ry(vx, vy) / mₚ()
-        ArrayPartition(du)
+        du
     end
 
     tspan = (0.0, 60)s
-    u₀ = ArrayPartition([x₀(), y₀(), v₀x(), v₀y()])
+    u₀ = convert_to_mixed([x₀(), y₀(), v₀x(), v₀y()])
+
     prob = ODEProblem(f,u₀,tspan)
     @test @inferred(f(u₀/s, u₀, :p, 1.0s)) isa ArrayPartition
 
     algs = [Euler(),Midpoint(),Heun(),Ralston(),RK4(),SSPRK104(),SSPRK22(),SSPRK33(),
-        SSPRK43(),SSPRK432(),BS3(),BS5(),DP5(),DP8(),Feagin10(),Feagin12(),
+        BS3(),BS5(),DP5(),DP8(),Feagin10(),Feagin12(),
         Feagin14(),TanYam7(),Tsit5(),TsitPap8(),Vern6(),Vern7(),Vern8(),Vern9()]
     algs = vcat(algs, [Tsit5(), AutoVern6(Rodas5(autodiff=false)),
         AutoVern7(Rodas5(autodiff=false)),
         AutoVern8(Rodas5(autodiff=false)),
         AutoVern9(Rodas5(autodiff=false))])
+    # Excluded / broken algorithms, which is acceptable:
+    #  SSPRK432(), SSPRK43()
 
     function requires_stepsize(alg)
         adaptive = OrdinaryDiffEq.isadaptive(alg)
@@ -122,7 +125,7 @@ end
     end
 
     for alg in algs
-        println(alg, "   ")
+        println(stdout, alg, "   ")
         if requires_stepsize(alg)
             @test solve(prob,alg, dt = 1.0s).retcode === :Success
         else

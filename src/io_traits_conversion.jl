@@ -39,6 +39,7 @@ struct VecMut <: Mixed end
 struct NotMixed <: Mixed end
 struct Single <: Mixed end
 struct Empty <: Mixed end
+const UnionVecSqMut = Union{VecMut, MatSqMut}
 # The trait function returns a concrete type for the trait.
 mixed_array_trait(::T) where {T<:AbstractArray} = NotMixed()             # Fallback
 mixed_array_trait(::ArrayPartition{Union{}, Tuple{}}) = Empty()          # Covers N=0, see https://docs.julialang.org/en/v1/manual/methods/#Tuple-and-NTuple-arguments
@@ -62,33 +63,57 @@ is_vector_mutable_stable(v) = mixed_array_trait(v) isa VecMut
 ############
 vpack(x) = [x]
 vpack(x::DimensionlessQuantity) = [uconvert(NoUnits, x)]
+function vpack(x::AbstractVector)
+    @assert length(x) == 1
+    vpack(first(x))
+end
 """
-    convert_to_mixed(A::AbstractArray{<:Number})
-    -> nested mutable ArrayPartition (Mixed)
-
-`A` is typically Matrix{<:Number} or Vector{<:Number}.
+    convert_to_mixed(x...)
+    -> nested mutable ArrayPartition (Mixed). 
+    Vector-like or Matrix-like depending on input.
 """
-function convert_to_mixed(A::AbstractArray{<:Number})
-    if is_square_matrix_mutable(A) || is_vector_mutable_stable(A)
-        A
-    elseif ndims(A) == 2
+function convert_to_mixed(A::AbstractArray)
+    if ndims(A) == 2
         @assert size(A)[1] > 1 "Cannot convert to mixed from row vectors"
-        Am = ArrayPartition(map(eachrow(A)) do rw
-            ArrayPartition(map(vpack, rw)...)
-        end...)
+        Am = convert_to_mixed(eachrow(A))
         @assert Am isa MixedCandidate "Cannot convert_to_mixed from size $(size(A)) $(typeof(A))"
-        Am::MixedCandidate
+        @assert mixed_array_trait(Am) == MatSqMut()
+        Am
     elseif ndims(A) == 1
-#        ArrayPartition(map(x-> [x], A)...)
-         ArrayPartition(map(vpack, A)...)
+        # Not tested, vector types are expected to dispatch elsewhere.
+        convert_to_mixed(A...)
     else
         throw(DimensionMismatch())
     end
+end
+convert_to_mixed(x::AbstractVector{T}) where T = convert_to_mixed(x...)
+convert_to_mixed(x::NTuple{N, U}) where {N, U} = ArrayPartition_from_single_element_vectors(vpack.(x))
+function convert_to_mixed(x::Vararg{<:Number})
+    p = vpack.(x)
+    if length(x) > 1
+        ArrayPartition_from_single_element_vectors(convert.(E, p))
+    else
+        if length(first(p)) == 1
+            ArrayPartition_from_single_element_vectors(p)
+        else
+            convert_to_mixed(p...)
+        end
+    end
+end
+function convert_to_mixed(x::MixedCandidate)
+    @assert is_square_matrix_mutable(x) || is_vector_mutable_stable(x)
+    x
 end
 function convert_to_mixed(A::Transpose{T, <:ArrayPartition}) where T
     apa = convert_to_array(A.parent)
     convert_to_mixed(copy(transpose(apa))) # Copy removes laziness
 end
+# For inferrable matrix-like
+function convert_to_mixed(g::Base.Generator)
+    thismixed(rw) = convert_to_mixed(rw...)
+    ArrayPartition(thismixed.(g)...)
+end
+ArrayPartition_from_single_element_vectors(x::NTuple{N, E}) where N = ArrayPartition(x)
 
 """
     convert_to_array(A::ArrayPartition)
@@ -114,13 +139,9 @@ julia> reshape(convert(Array{Any}, M2), (2, 2))'
 ```
 
 """
-function convert_to_array(A)
-    if A isa Array
-        A
-    else
-        convert_to_array(mixed_array_trait(A), A)
-    end
-end
+convert_to_array(A::Array) = A
+convert_to_array(A) = convert_to_array(mixed_array_trait(A), A)
+
 function convert_to_array(::MatSqMut, A::ArrayPartition{T, S}) where {T, S}
     m = length(A.x)
     n = length(A.x[1])

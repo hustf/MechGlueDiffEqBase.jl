@@ -75,7 +75,11 @@ function premul_inv(::MatSqMut, Q, B::AbstractVecOrMat)
     Qu = oneunit.(Qar) # TODO Revisit, alloc?
     Qu = 1 ./ Qu
     @debug "premul_inv" oneunit.(Qar)
-    @assert is_reciprocal_symmetric(Qu) "Can't invert matrix because element dimensions are not reciprocal symmetric around the diagonal"
+    # If determinant(Q) is dimensionless, this assertion would return Unitfu.NoDims. 
+    # If the Q entries have mismatched dimensions, the determinant is undefined
+    # and its dimension is missing. The error is thrown here. Call determinant(Q)
+    # to locate the mismatched dimensions.
+    @assert determinant_dimension(Q) !== Dimensions{(Dimension{Missing}(1//1),)} "Can't invert because of mismatched dimensions (units)."
     Bar = convert_to_array(B)
     Bn = ustrip.(Bar)
     Bu = oneunit.(Bar)
@@ -96,16 +100,21 @@ inv(A::MixedCandidate) = isbitstype(eltype(A)) ? _inv_consistent(mixed_array_tra
 _inv(::Mixed, Q) = throw(DimensionMismatch("inversion candidate is not square: dimensions are $(size(Q))"))
 function _inv_mixed(::MatSqMut, Q)
     require_one_based_indexing(Q)
+    # If determinant(Q) is dimensionless, this assertion would return Unitfu.NoDims. 
+    # If the Q entries have mismatched dimensions, the determinant is undefined
+    # and its dimension is missing. The error is thrown here. Call determinant(Q)
+    # to locate the mismatched dimensions.
+    @assert determinant_dimension(Q) !== Dimensions{(Dimension{Missing}(1//1),)} "Can't invert because of mismatched dimensions (units)."
     # Split numeric unit matrices, treat separately
     Qar = convert_to_array(Q)
     Qn = ustrip.(Qar)
     @debug "_inv_mixed" oneunit.(Qar)
     Qu = oneunit.(Qar)
-    Qu = 1 ./ Qu
+    # Dimensions of the inverse(Q) are the inverse dimensions of transpose(Q).
+    # => Units of the inverse(Q) are the inverse units of transpose(Q).
+    Qu = 1 ./ transpose(Qu)
     @debug "_inv_mixed" oneunit.(Qar)
-    @assert is_reciprocal_symmetric(Qu) "Can't invert matrix because element dimensions are not reciprocal symmetric around the diagonal"
     @debug "_inv_mixed" string(Qn) maxlog=1
-    # The reciprocal of Q has the same units as Q. Hence:
     @debug "_inv_mixed" string(Q) string(Qar) string(Qu) maxlog=1
      # Elementwise facor number and unitog=1
     convert_to_mixed(inv(Qn) .* Qu)
@@ -117,18 +126,3 @@ function _inv_consistent(::MatSqMut, Q)
     Qu = 1 / oneunit(eltype(Q))
     convert_to_mixed(inv(Qn) * Qu)
 end
-#=
-    checksquare(A)
-    S = typeof((one(T)*zero(T) + one(T)*zero(T))/one(T))
-    AA = convert(AbstractArray{S}, A)
-    if istriu(AA)
-        Ai = triu!(parent(inv(UpperTriangular(AA))))
-    elseif istril(AA)
-        Ai = tril!(parent(inv(LowerTriangular(AA))))
-    else
-        Ai = inv!(lu(AA))
-        Ai = convert(typeof(parent(Ai)), Ai)
-    end
-    return Ai
-end
-=#

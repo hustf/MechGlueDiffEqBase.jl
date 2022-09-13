@@ -8,19 +8,25 @@ quantifying how well boundary conditions are fulfilled with starting conditions
 u0. Zero residuals means fulfilled conditions.
 """
 function DIMENSIONAL_NLSOLVE(bvloss, u0; resid0 = ArrayPartition([0.0], [0.0]))
-    @debug "DIMENSIONAL_NLSOLVE" string(resid0) typeof(bvloss) fieldnames(typeof(bvloss))
+    @debug "DIMENSIONAL_NLSOLVE" string(resid0) typeof(bvloss) fieldnames(typeof(bvloss)) string(u0)
     autodiff = :central
     inplace = !applicable(bvloss, u0)
+    @debug "DIMENSIONAL_NLSOLVE" inplace autodiff
+    if inplace
+        @debug "DIMENSIONAL_NLSOLVE" bvloss(u0)
+    end
     dloss = OnceDifferentiable(bvloss, u0, resid0; autodiff, inplace)
+    @debug "DIMENSIONAL_NLSOLVE" dloss.x_df
     xtol = zero(dloss.x_df)  # TODO consider dropping units, single parameter, keyword argument.
     ftol = 1.0e-8 .* oneunit.(dloss.F) # TODO consider dropping units, single parameter.
-    @debug "DIMENSIONAL_NLSOLVE" (dloss isa OnceDifferentiable) string(xtol) string(ftol)
+
     iterations = 1000
     store_trace = false
     show_trace = false
     extended_trace = false
     factor = 1.0
     autoscale = true
+    @debug "DIMENSIONAL_NLSOLVE" (dloss isa OnceDifferentiable) string(u0) string(xtol) string(ftol)
     res = trust_region(dloss, u0, xtol, ftol, iterations,
         store_trace, show_trace, extended_trace, factor,
         autoscale)

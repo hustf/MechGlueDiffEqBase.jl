@@ -3,7 +3,8 @@
 
 # NLSolversBase\src\objective_types\abstract.jl:19 
 # was alloc_DF(x::ArrayPartition{<:AbstractQuantity, <:Tuple} , F)
-
+# This type piracy is considered necessary, but could perhaps be less
+# intrusive with traits-based application.
 function alloc_DF(x::RW(N), F::RW(N)) where N
     @debug "alloc_DF" string(x) string(F) maxlog=2
     jprot = jacobian_prototype_nan(x, F)

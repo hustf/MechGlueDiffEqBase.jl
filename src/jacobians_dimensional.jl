@@ -72,7 +72,7 @@ function finite_difference_jacobian(
     J = jac_prototype isa Nothing ? (sparsity isa Nothing ? jacobian_prototype_zero(x, vecfx) : zeros(eltype(x),size(sparsity))) : zero(jac_prototype)
     nrows = length(J.x)
     ncols = length(J.x[1])
-
+     # TODO Indiexing with indices obtained from length, size etc. is discouraged. Use eachindex or axes instead.
     if !(sparsity isa Nothing)
         rows_index, cols_index = ArrayInterface.findstructralnz(sparsity)
         rows_index = [rows_index[i] for i in 1:length(rows_index)]
