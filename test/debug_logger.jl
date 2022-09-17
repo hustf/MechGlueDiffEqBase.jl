@@ -3,7 +3,7 @@ using Logging: LogLevel, with_logger, ConsoleLogger
 """
 Debug formatter, highlight NLSolversBase. To use:
 ```
-with_logger(Logging.ConsoleLogger(stderr, Logging.Debug;meta_formatter = locfmt)) do 
+with_logger(Logging.ConsoleLogger(stderr, Logging.Debug;meta_formatter = locfmt)) do
     @test ...
 end
 ```

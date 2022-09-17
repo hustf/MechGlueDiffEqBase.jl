@@ -1,7 +1,7 @@
 using Test, Dates
 include("debug_logger.jl")
 
-# Setup based on Cairo.jl. Avoid re-running time consuming 
+# Setup based on Cairo.jl. Avoid re-running time consuming
 # tests in the same session.
 test_dir_path = @__DIR__
 
@@ -9,7 +9,7 @@ filenumber(s) = parse(Int, join(filter!.(isdigit, collect.(s))))
 function test_one_file(test_file_name)
     output_log_name = replace(test_file_name,".jl" => ".log")
     if isfile(output_log_name)
-        printstyled(output_log_name, " exists.\n"; color=176)
+        printstyled(output_log_name, " exists.\n"; color = 176)
         @test true
     else
         printstyled(test_file_name, "\n"; color = 176)
@@ -59,7 +59,7 @@ end
 
 @testset "Univariate differentiation (test_n, 19 < n < 30)" begin
     @testset "test: $test_file_name" for test_file_name in test_files
-        if 19 < filenumber(test_file_name) < 30 
+        if 19 < filenumber(test_file_name) < 30
             test_one_file(test_file_name)
         end
     end

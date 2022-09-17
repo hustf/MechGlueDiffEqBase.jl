@@ -28,7 +28,7 @@ end
 
     for alg in algs
         @show alg
-        @test solve(prob,alg,dt=1∙s/10).retcode === :Success
+        @test solve(prob,alg,dt = 1∙s/10).retcode === :Success
     end
 end
 
@@ -40,7 +40,7 @@ end
 
     for alg in algs
         @show alg
-        sol = solve(prob,alg,dt=1∙s/10)
+        sol = solve(prob,alg,dt = 1∙s/10)
     end
     sol = solve(prob,ExplicitRK())
 end

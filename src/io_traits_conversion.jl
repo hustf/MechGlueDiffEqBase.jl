@@ -2,14 +2,14 @@
 # Types, traits
 ###############
 
-# We want to specialize on ArrayPartitions that 
-# - can represent square matrices  
+# We want to specialize on ArrayPartitions that
+# - can represent square matrices
 # - are mutable
 # - have width and height > 1
 # - have elements that are Real, Complex, Quantity{<:Real}, Quantity{<:Complex}
 # - are inferrable
 # ...because Matrix{Any} is mostly not inferrable. For inferrability, we implement
-# such matrix-like objects as nested ArrayPartition. 
+# such matrix-like objects as nested ArrayPartition.
 # For mutability, the innermost type is a one-element vector.
 # A value (consider Float64):
 const Q = Number
@@ -42,17 +42,16 @@ struct Empty <: Mixed end
 const UnionVecSqMut = Union{VecMut, MatSqMut}
 # The trait function returns a concrete type for the trait.
 mixed_array_trait(::T) where {T<:AbstractArray} = NotMixed()             # Fallback
-mixed_array_trait(::ArrayPartition{Union{}, Tuple{}}) = Empty()          # Covers N=0, see https://docs.julialang.org/en/v1/manual/methods/#Tuple-and-NTuple-arguments
-mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{N, RW(N)}}) where {N} = MatSqMut() 
+mixed_array_trait(::ArrayPartition{Union{}, Tuple{}}) = Empty()          # Covers N = 0, see https://docs.julialang.org/en/v1/manual/methods/#Tuple-and-NTuple-arguments
+mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{N, RW(N)}}) where {N} = MatSqMut()
 #mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{1, RW(1)}}) = Single()  # Covers N = 1
 mixed_array_trait(::ArrayPartition{<:Q, <:NTuple{N, E}}) where {N} = N == 1 ? Single() : VecMut()
 # Same as above, but called with `typeof(A)`. USeful because Julia base use this way of calling in IndexStyle()
 mixed_array_trait(::Type{<:AbstractArray}) = NotMixed()             # Fallback
-mixed_array_trait(::Type{<:ArrayPartition{Union{}, Tuple{}}}) = Empty()          # Covers N=0, see https://docs.julialang.org/en/v1/manual/methods/#Tuple-and-NTuple-arguments
+mixed_array_trait(::Type{<:ArrayPartition{Union{}, Tuple{}}}) = Empty()          # Covers N = 0, see https://docs.julialang.org/en/v1/manual/methods/#Tuple-and-NTuple-arguments
 mixed_array_trait(::Type{<:ArrayPartition{<:Q, <:NTuple{N, RW(N)} where {N}}}) = MatSqMut()
 #mixed_array_trait(::Type{<:ArrayPartition{<:Q, <:NTuple{1, RW(1)}}}) = Single()  # Covers N = 1
 mixed_array_trait(::Type{<:ArrayPartition{<:Q, <:NTuple{N, E}}}) where {N} = N == 1 ? Single() : VecMut()
-
 
 is_square_matrix_mutable(M) = mixed_array_trait(M) isa MatSqMut
 is_vector_mutable_stable(v) = mixed_array_trait(v) isa VecMut
@@ -67,9 +66,10 @@ function vpack(x::AbstractVector)
     @assert length(x) == 1
     vpack(first(x))
 end
+
 """
     convert_to_mixed(x...)
-    -> nested mutable ArrayPartition (Mixed). 
+    -> nested mutable ArrayPartition (Mixed).
     Vector-like or Matrix-like depending on input.
 """
 function convert_to_mixed(A::AbstractArray)
@@ -117,20 +117,20 @@ ArrayPartition_from_single_element_vectors(x::NTuple{N, E}) where N = ArrayParti
 
 """
     convert_to_array(A::ArrayPartition)
-    --> Matrix{Any} or Vector{Any}.  
+    --> Matrix{Any} or Vector{Any}.
 
-We avoid overloading base function ´convert´on types defined by ArrayTools. 
+We avoid overloading base function ´convert´on types defined by ArrayTools.
 
     # Examples
     ```julia-repl
     julia> M2u = ArrayPartition(ArrayPartition([1]kg, [2]s), ArrayPartition([3]s, [4]kg));
-    
+
     julia> convert_to_array(M2u)
 
     julia> Vu = ArrayPartition([1.0]s⁻¹, [2.0]s⁻²)
 
     julia> convert_to_array(Vu)
-     
+
     ```
 Note the row-first order of M2:
 # Example
@@ -148,7 +148,7 @@ function convert_to_array(::MatSqMut, A::ArrayPartition{T, S}) where {T, S}
     X = Array{T, 2}(undef, m, n)
     for i = 1:m
         # Square. Can easily be dropped to extend functionality.
-        @assert n == length(A.x[i]) 
+        @assert n == length(A.x[i])
         for j = 1:n
             X[i, j] = A.x[i][j]
         end
@@ -185,7 +185,7 @@ Base.@propagate_inbounds function getindex(A::AdjOrTransAbsVec{T,S}, i::Int, j::
 end
 getindex_of_transposed_mixed(::MatSqMut, A, i, j ) = A.parent[j, i]
 function getindex_of_transposed_mixed(::VecMut, A, i, j )
-    @assert i == 1 
+    @assert i == 1
     A.parent[j]
 end
 getindex_of_transposed_mixed(::S, A, i, j) where {S<:Mixed } = throw_boundserror(A, (i, j))
@@ -206,8 +206,8 @@ setindex!_of_transposed_mixed(::S, A, v, i, j) where {S<:Mixed } = throw_boundse
 # index style
 # Because: IndexStyle(transpose(typeof([1 2;3 4]))) -> IndexCartesian()
 # This is (likely) used by the fallback `show`` methods
-function _IndexStyle(::Type{<:AdjOrTransAbsVec{T,S} where {T, S <: MixedCandidate}}) 
-    @debug "_IndexStyle" 
+function _IndexStyle(::Type{<:AdjOrTransAbsVec{T,S} where {T, S <: MixedCandidate}})
+    @debug "_IndexStyle"
     throw("Unused?")
     IndexStyle_of_transposed_mixed(mixed_array_trait(A.parent))
 end
@@ -241,7 +241,7 @@ function print_as_mixed(io::IO, ::MatSqMut, A)
     end
 end
 function print_as_mixed(io::IO, ::VecMut, v::RW(N)) where N
-    # A normal vector would have no type info here. We provide a short summary with coloured 
+    # A normal vector would have no type info here. We provide a short summary with coloured
     # highlighting to indicate that this is not a quite normal vector.
     buf = IOBuffer()
     ioc = IOContext(buf, IOContext(io).dict)
@@ -256,7 +256,7 @@ function print_as_mixed(io::IO, ::VecMut, v::RW(N)) where N
 end
 
 function print_as_mixed(io::IO, ::Single, v)
-    # A normal vector would have no type info here. We provide a short summary with coloured 
+    # A normal vector would have no type info here. We provide a short summary with coloured
     # highlighting to indicate that this is not a quite normal vector.
     buf = IOBuffer()
     ioc = IOContext(buf, IOContext(io).dict)
@@ -272,7 +272,7 @@ print_as_mixed(io::IO, ::Union{NotMixed, Empty}, v) = invoke(print, Tuple{typeof
 # Overloads RecursiveArrayTools.jl:26, which invokes showing this as 'Any'..., with too much header info:
 Base.show(io::IO, A::MixedCandidate) = Base.show(io, mixed_array_trait(A), A)
 function Base.show(io::IO, ::MatSqMut, A::MixedCandidate)
-    # A normal matrix would have no type info here. We'll just provide a short summary with coloured 
+    # A normal matrix would have no type info here. We'll just provide a short summary with coloured
     # highlighting to indicate that this is not a quite normal matrix.
     col = get(io, :unitsymbolcolor, :cyan)
     printstyled(io, color = col, "convert_to_mixed(")
@@ -281,7 +281,7 @@ function Base.show(io::IO, ::MatSqMut, A::MixedCandidate)
     printstyled(io, color = col, ")")
 end
 function Base.show(io::IO, ::VecMut, v::RW(N)) where N
-    # A normal vector would have no type info here. We provide a short summary with coloured 
+    # A normal vector would have no type info here. We provide a short summary with coloured
     # highlighting to indicate that this is not a quite normal vector.
     buf = IOBuffer()
     ioc = IOContext(buf, IOContext(io).dict)

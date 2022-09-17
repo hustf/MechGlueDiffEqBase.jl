@@ -5,7 +5,7 @@
 """
     jacobian_prototype_zero(x, vecfx)
 -> type-stable, mutable Jacobian container prototype.
-Assumes x is a vector of arguments to function f, and vecfx = f(x). 
+Assumes x is a vector of arguments to function f, and vecfx = f(x).
 The Jacobian associates elements of x with columns, and
 elements of vecfx with rows. If both vectors have elements with units,
 each element in the Jacobian matrix could have unique units. This container
@@ -20,7 +20,7 @@ jacobian_prototype_zero(x, vecfx) = zero.(jacobian_prototype_nan(x, vecfx))
 """
     jacobian_prototype_nan(x, vecfx)
 -> type-stable, mutable Jacobian container prototype.
-Assumes x is a vector of arguments to function f, and vecfx = f(x). 
+Assumes x is a vector of arguments to function f, and vecfx = f(x).
 The Jacobian associates elements of x with columns, and
 elements of vecfx with rows. If both vectors have elements with units,
 each element in the Jacobian matrix could have unique units. This container
@@ -67,7 +67,7 @@ end
 function jacobian_prototype_nan(x::E, vecfx::Vector{<:Q})
     N = length(vecfx)
     @assert length(x) == N
-    # Immutable x, mutable vector f(x) with at least one element in x or vecfx with 
+    # Immutable x, mutable vector f(x) with at least one element in x or vecfx with
     # physical dimension, none of which are ArrayPartitions.
     # Such differential equations are workable, easier to formulate, though perhaps
     # are not inferrable.
@@ -75,10 +75,10 @@ function jacobian_prototype_nan(x::E, vecfx::Vector{<:Q})
 end
 
 # We avoid overloading type generators as far as possible,
-# but this seems necessary in order to target 
+# but this seems necessary in order to target
 # NLSolverBase/src/oncedifferentiable.jl/OnceDifferentiable:94
 # j_finitediff_cache = FiniteDiff.JacobianCache(copy(x_seed), copy(F), copy(F), fdtype)
-# Extending FiniteDiff/src/jacobians.jl:68, the difference is 
+# Extending FiniteDiff/src/jacobians.jl:68, the difference is
 function JacobianCache(
     x1::ArrayPartition{T},
     fx::ArrayPartition{<:AbstractQuantity, Tuple} ,
@@ -91,12 +91,12 @@ function JacobianCache(
 
     throw("Here we are! Or are we?")
 
-    @debug "JacobianCache T"  T maxlog=2
+    @debug "JacobianCache T"  T maxlog = 2
     @debug returntype
     @debug "Hei hei"
     fdtype isa Type && (fdtype = fdtype())
     inplace isa Type && (inplace = inplace())
-    if fdtype==Val(:complex)
+    if fdtype == Val(:complex)
         !(returntype<:Real) && fdtype_error(returntype)
 
         if eltype(fx) <: Real

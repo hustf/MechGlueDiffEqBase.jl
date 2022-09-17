@@ -18,14 +18,14 @@ using MechanicalUnits: @import_expand, ∙
 # F 'ϵ' for finite differentiation of quantities
 ################################################
 @testset "ϵ for finite differentiation of quantities" begin
-    #     compute_epsilon(Val(:central}, x::T, relstep::Real, absstep::Quantity, dir=nothing)
+    #     compute_epsilon(Val(:central}, x::T, relstep::Real, absstep::Quantity, dir = nothing)
     @test compute_epsilon(Val(:central), 1.0kg, 0.001, 0.001kg, nothing) === 0.001kg
-    #     compute_epsilon(::Val{:forward}, x::T, relstep::Real, absstep::Quantity{T1, D, U}, 
+    #     compute_epsilon(::Val{:forward}, x::T, relstep::Real, absstep::Quantity{T1, D, U},
     #           dir = nothing) where {T<:Number, T1<:Real, D, U}
     @test compute_epsilon(Val(:forward), 1.0kg, 0.001, 0.001kg, nothing) === 0.001kg
 
-    #     compute_epsilon(::Val{:complex}, x::Quantity{T, D, U}, ::Union{Nothing,Quantity{T, D, U}}=nothing, 
-    #        ::Union{Nothing,Quantity{T, D, U}}=nothing, dir=nothing)
+    #     compute_epsilon(::Val{:complex}, x::Quantity{T, D, U}, ::Union{Nothing,Quantity{T, D, U}} = nothing,
+    #        ::Union{Nothing,Quantity{T, D, U}} = nothing, dir = nothing)
     @test compute_epsilon(Val(:complex), 1.0kg, nothing, nothing, nothing) ≈ 2.220446049250313e-16
 end
 
@@ -34,13 +34,13 @@ end
 ##############################################
 # Derivative, univariate real argument with units, out-of-place, dimensionless derivative
 @testset "Univariate finite derivative of quantities" begin
-    @test let 
+    @test let
         f = x -> 2x
         x = 2.0cm
         finite_difference_derivative(f, x)
     end ≈ 2.0
     # Derivative, univariate real, out-of-place, derivative with unit
-    @test let 
+    @test let
         f = x -> 2kg * x
         x = 2.0cm
         return finite_difference_derivative(f, x)

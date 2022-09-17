@@ -3,20 +3,45 @@
 
     Function based on BoundaryValueDiffEq/src/algorithms.jl:11.
 
-bvloss is intended to be a OnceDifferentiable function, a set of residuals
-quantifying how well boundary conditions are fulfilled with starting conditions
-u0. Zero residuals means fulfilled conditions.
+The solution process repeatedly calls `bc!(u, sol, p, t)`, where `u` starts out as a copy of `u0` and ends up as `u == zero(u)`
+
+# Arguments
+- `u0` initial condition to `f´!(du, u, p, t)`, defined in `BVProblem(f´!, bc!, u0, tspan, p)`.
+- `bvloss` is a root finding function for NLSolve, defined by the caller, `DiffEqBase.__solve`.
+
+We internally extract the captured variables of `bvloss` as fields:
+- `bvloss.kwargs`: 'dtmax' is internally stripped of units. `solve(..;dtmax= 0.05s`) -> `:dtmax => 0.05`
+- `bvloss.prob`::BVProblem with fields:
+    - `.f`::ODEFunction, see inline docs.
+        -> `bvloss.prob.f.f`:: `f´!`
+    - `.bc`: `bc!`
+    - `.tspan`
+    - `.p`: The parameters for the problem. Defaults to `NullParameters`.
+    - `kwargs`
+- `bvloss.alg` - e.g. type `Shooting` or `GeneralMIRK4`
+    - `.ode_alg`
+    - `.nlsolve`
+- `bvloss.sol`::Core.Box(#undef)... a placeholder, at first call.
+- `bvloss.bc`
 """
-function DIMENSIONAL_NLSOLVE(bvloss, u0; resid0 = ArrayPartition([0.0], [0.0]))
-    @debug "DIMENSIONAL_NLSOLVE" string(resid0) typeof(bvloss) fieldnames(typeof(bvloss)) string(u0)
-    autodiff = :central
-    inplace = !applicable(bvloss, u0)
-    @debug "DIMENSIONAL_NLSOLVE" inplace autodiff
-    if inplace
-        @debug "DIMENSIONAL_NLSOLVE" bvloss(u0)
-    end
+function DIMENSIONAL_NLSOLVE(bvloss, u0)
+    # This is identical to DEFAULT_NLSOLVE now. TODO: Delete. Use inline doc elsewhere?
+
+
+    #@debug "DIMENSIONAL_NLSOLVE:26" bvloss.kwargs bvloss.prob bvloss.alg bvloss.sol bvloss.bc maxlog = 2
+    #@debug "DIMENSIONAL_NLSOLVE:27" bvloss.prob bvloss.prob.f bvloss.prob.bc bvloss.prob.tspan bvloss.prob.p bvloss.prob.kwargs maxlog = 2
+    #@debug "DIMENSIONAL_NLSOLVE:28" fieldnames(typeof(bvloss.prob.f)) maxlog = 2
+    #@debug "DIMENSIONAL_NLSOLVE:29" typeof(bvloss.prob.f) maxlog = 2
+    #autodiff = :central
+    #inplace = !applicable(bvloss, string(u0))
+    #@debug "DIMENSIONAL_NLSOLVE:34" bvloss.sol bvloss.prob.p bvloss.prob.tspan fieldnames(typeof(bvloss.alg)) maxlog = 2
+    #inisol =  solve(bvloss.prob, bvloss.alg.ode_alg; bvloss.kwargs...);
+    #F = bvloss.prob.bc(u0, inisol, bvloss.prob.p, bvloss.prob.tspan[1])
+    @debug "DIMENSIONAL_NLSOLVE:37" string(u0) maxlog = 2
+    res = NLsolve.nlsolve(bvloss, u0)
+
+    #=
     dloss = OnceDifferentiable(bvloss, u0, resid0; autodiff, inplace)
-    @debug "DIMENSIONAL_NLSOLVE" dloss.x_df
     xtol = zero(dloss.x_df)  # TODO consider dropping units, single parameter, keyword argument.
     ftol = 1.0e-8 .* oneunit.(dloss.F) # TODO consider dropping units, single parameter.
 
@@ -26,18 +51,18 @@ function DIMENSIONAL_NLSOLVE(bvloss, u0; resid0 = ArrayPartition([0.0], [0.0]))
     extended_trace = false
     factor = 1.0
     autoscale = true
-    @debug "DIMENSIONAL_NLSOLVE" (dloss isa OnceDifferentiable) string(u0) string(xtol) string(ftol)
     res = trust_region(dloss, u0, xtol, ftol, iterations,
         store_trace, show_trace, extended_trace, factor,
         autoscale)
-    @debug "DIMENSIONAL_NLSOLVE" res
+    @debug "DIMENSIONAL_NLSOLVE res"
+    =#
     (res.zero, res.f_converged)
 end
 # Extends __solve, defined in BoundaryValueDiffEq/src/solve.jl:4
 # That versions expects prob.u0 to contain the argument prototype for the ODEFunction, typically u0,
 # and it copies that argument to also be used for the intital residual value of the loss function.
-# 
-# This extension is dispatched to when prob.u0 contains a tuple. 
+#
+# This extension is dispatched to when prob.u0 contains a tuple.
 # The first element in the tuple is interpreted as normal, i.e. u0.
 # The second element is interpreted as the initial residual value.
 # It is nice to have both, because they often have different units,
@@ -53,15 +78,15 @@ function __solve(prob::BVProblem{U}, alg::Shooting; kwargs...) where {U<:Tuple{<
 
     # Form a root finding function.
     bvloss = function (resid, minimizer)
-        tmp_prob = remake(prob,u0=minimizer)
+        tmp_prob = remake(prob,u0 = minimizer)
         sol = solve(tmp_prob, alg.ode_alg;kwargs...)
         bc(resid,sol,sol.prob.p,sol.t)
         nothing
     end
    # Call NLsolve/src/nlsolve/nlsolve.jl:1
     opt = alg.nlsolve(bvloss, u0; resid0)
-    @debug "__solve opt" fieldnames(typeof(opt)) 
-    sol_prob = remake(prob, u0=opt[1])
+    @debug "__solve opt" fieldnames(typeof(opt))
+    sol_prob = remake(prob, u0 = opt[1])
     @debug "__solve" sol_prob
     sol = solve(sol_prob, alg.ode_alg;kwargs...)
     if sol.retcode == opt[2]

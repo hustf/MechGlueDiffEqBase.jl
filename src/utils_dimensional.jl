@@ -26,7 +26,7 @@ end
 """
     determinant(A)
 
-Same as LinearAlgebra.det(A), works well with 
+Same as LinearAlgebra.det(A), works well with
 mixed types.
 
     Examples, comparison with LinearAlgebra.det
@@ -56,7 +56,7 @@ julia> @time determinant(B)
 2
 
 julia> LinearAlgebra.det(B)
-ERROR: ArgumentError: cannot reinterpret `Quantity{Int64}` as `Int64`, type `Quantity{Int64}` is 
+ERROR: ArgumentError: cannot reinterpret `Quantity{Int64}` as `Int64`, type `Quantity{Int64}` is
 not a bits type
 
 julia> A3u = [1kg 2kg∙cm 3s; 4s 5cm∙s 6s²∙kg⁻¹; 7cm⁻¹ 8 0s∙kg⁻¹∙cm⁻¹]
@@ -211,6 +211,7 @@ function determinant_dimension(A)
     end
     accum
 end
+
 """
     minor_subdet_dimension(A, cols)
 

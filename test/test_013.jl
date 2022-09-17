@@ -56,7 +56,7 @@ using Test: @inferred
         u´
     end
 
-    function solve_guarded(u₀; alg = Tsit5(), debug=false)
+    function solve_guarded(u₀; alg = Tsit5(), debug = false)
         # Test the functions
         @inferred Γ!(u₀/s,u₀, nothing, nothing)
         !debug  && disable_logging(Debug)
@@ -72,7 +72,7 @@ using Test: @inferred
         disable_logging(LogLevel(Debug-1))
         sol
     end
-    sol = solve_guarded(u₀, debug=true);
+    sol = solve_guarded(u₀, debug = true);
     @test sol(60s)[1] > 23km
 end
 

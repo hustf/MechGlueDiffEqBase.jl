@@ -1,14 +1,14 @@
-# These extend functions in NLSolversbase 
+# These extend functions in NLSolversbase
 
 
-# NLSolversBase\src\objective_types\abstract.jl:19 
+# NLSolversBase\src\objective_types\abstract.jl:19
 # was alloc_DF(x::ArrayPartition{<:AbstractQuantity, <:Tuple} , F)
 # This type piracy is considered necessary, but could perhaps be less
 # intrusive with traits-based application.
 function alloc_DF(x::RW(N), F::RW(N)) where N
-    @debug "alloc_DF" string(x) string(F) maxlog=2
+    @debug "alloc_DF:9" string(x) string(F) maxlog = 2
     jprot = jacobian_prototype_nan(x, F)
-    @debug "alloc_DF" string(jprot) maxlog=2
+    @debug "alloc_DF" string(jprot) maxlog = 2
     jprot
 end
 
@@ -22,7 +22,7 @@ function OnceDifferentiable(f, df, fdf,
     F::RW(N),
     DF::AbstractArray = alloc_DF(x, F);
     inplace = true) where N
-    @debug "OnceDifferentiable extended" methods(f) string(x) string(F) string(DF)
+    @debug "OnceDifferentiable:25" string(x) string(F) string(DF) maxlog = 2
     f = f!_from_f(f, F, inplace)
     df! = df!_from_df(df, F, inplace)
     fdf! = fdf!_from_fdf(fdf, F, inplace)
@@ -37,16 +37,17 @@ end
 """
     unit_of_mixed(A::MixedContent(N)) where N
 Extract FreeUnits in a similar struture to A. Unfortunately, the outermost
-ArrayPartition type is 'Any'. 
+ArrayPartition type is 'Any'.
 """
 function unit_of_mixed(A::MixedContent(N)) where N
     throw("unused1")
     ro(i) = ArrayPartition(unit.(A[i, :]))
-    ArrayPartition((ro(i) for i=1:N)...)
+    ArrayPartition((ro(i) for i = 1:N)...)
 end
+
 """
     convert_to_ArrayPartition(A::AbstractArray{<:FreeUnits})
-    -> nested immutable ArrayPartition 
+    -> nested immutable ArrayPartition
 
 `A` is typically Matrix{<:FreeUnits} or Vector{<:FreeUnits}.
 """
@@ -67,6 +68,8 @@ function convert_to_arraypartition(A::AbstractArray{<:FreeUnits})
         throw(DimensionMismatch())
     end
 end
+
+# Dead code
 "This could extend Base.(*), but we would want to examine the Julia conventions better first."
 function matmulvec(A::AbstractMatrix{T}, x::AbstractVector{T}) where T<:FreeUnits
     throw("Not used")
@@ -84,7 +87,7 @@ function matmulvec(A::AbstractMatrix{T}, x::AbstractVector{T}) where T<:FreeUnit
     #r
     matmulvec(Aap, x)
 
-    
+
 end
 function matmulvec(A::ArrayPartition, x::ArrayPartition)
     throw("unused1")
@@ -104,7 +107,7 @@ function matmulvec(A::ArrayPartition, x::ArrayPartition)
         end
         pr1
     end
-     ma = ArrayPartition((ro(i) for i=1:n)...)
+     ma = ArrayPartition((ro(i) for i = 1:n)...)
      @debug "matmulvec" ma
      ma
 end

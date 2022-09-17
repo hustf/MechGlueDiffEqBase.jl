@@ -10,7 +10,7 @@ using Test: @inferred
 # Differential equations with mixed units.
 # The argument u is matrix-like. Not recommended,
 # see below, but this works with fewer function extensions.
-# This is included to check if the blog post script 
+# This is included to check if the blog post script
 # https://hustf.github.io/DEQ/
 # is still working.
 @testset "Matrix-like argument (not recommended) diffeq" begin
@@ -36,7 +36,7 @@ using Test: @inferred
     # Using a matrix-like input argument (and solution) in this way is possible,
     # but there are downsides: It's Jacobian (its
     # derivative) becomes an awkward thing: The Jacobian of a matrix
-    # has three dimensions. 
+    # has three dimensions.
     # The upside of this formulation is that each row in the input argument
     # has the same dimensionality.
     # This problem is reformulated and included in a later test.
@@ -72,8 +72,8 @@ using Test: @inferred
         return u´
     end
 
-    function solve_guarded(u₀; alg = Tsit5(), debug=false)
-        # Test the functions. 
+    function solve_guarded(u₀; alg = Tsit5(), debug = false)
+        # Test the functions.
         # Γ! is no longer inferrable due to revisions in MechGlueDiffEqBase and Unitfu.
         @inferred packout(u₀)
         @inferred packout(0.01u₀/s)
@@ -94,7 +94,7 @@ using Test: @inferred
         disable_logging(LogLevel(Debug-1))
         sol
     end
-    sol = solve_guarded(u₀, debug=true);
+    sol = solve_guarded(u₀, debug = true);
     @test sol(60s)[1] > 23km
 end
 nothing

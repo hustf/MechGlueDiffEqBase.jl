@@ -18,9 +18,9 @@ function mul!(C::RW(N), A::ArrayPartition{<:Q, <:NTuple{N, RW(N)}}, B::RW(N)) wh
             catch e
                 @warn("mul! DimensionError hint",
                     (i, j),
-                    A[i, j], 
+                    A[i, j],
                     B[j],
-                    A[i, j] * B[j], 
+                    A[i, j] * B[j],
                     C[i],
                     oneunit(C[i]) / oneunit(A[i,j]),
                     oneunit(C[i]) / oneunit(B[j]))
@@ -36,7 +36,7 @@ function mul!(C::RW(N), A::Transpose, B::RW(N)) where {N}
     mul!(C, Afull, B)
 end
 function (*)( A::ArrayPartition{<:Q, <:NTuple{N, RW(N)}}, B::RW(N)) where {N}
-    # We take the units from the first column of A multiplied by B. 
+    # We take the units from the first column of A multiplied by B.
     # The following terms must be dimensionally compatible. If not,
     # the error message should be helpful.
     # Note that text books often implicitly allow operations like 0.0 * 0.0 + 1kg * 2.0m,
@@ -44,7 +44,7 @@ function (*)( A::ArrayPartition{<:Q, <:NTuple{N, RW(N)}}, B::RW(N)) where {N}
     Avu = oneunit.(A[:, 1])
     Bu = oneunit(first(B))
     Cu = convert_to_mixed(Avu * Bu)
-    @debug "*" string(Avu) string(Bu) string(Cu) maxlog=1
+    @debug "*" string(Avu) string(Bu) string(Cu) maxlog = 1
     mul!(Cu, A, B)
 end
 
@@ -64,33 +64,30 @@ end
 # "Division", pre-multiply the inverse A
 ########################################
 # Extends Base: \
-(\)(A::MixedCandidate, B::AbstractArray) = premul_inv(mixed_array_trait(A), A, B)
+(\)(A::MixedCandidate, B::AbstractVector) = premul_inv(mixed_array_trait(A), A, B)
 premul_inv(::VecMut, A, B) = A \ B
-function premul_inv(::MatSqMut, Q, B::AbstractVecOrMat)
+function premul_inv(::MatSqMut, Q, B::AbstractVector)
+    # TODO compare with inv(Q) and possibly use that.
     require_one_based_indexing(Q, B)
     # Split numeric unit matrices, treat separately
-    Qar = convert_to_array(Q)
-    Qn = ustrip.(Qar)
-    @debug "premul_inv" oneunit.(Qar)
-    Qu = oneunit.(Qar) # TODO Revisit, alloc?
-    Qu = 1 ./ Qu
-    @debug "premul_inv" oneunit.(Qar)
-    # If determinant(Q) is dimensionless, this assertion would return Unitfu.NoDims. 
+    Qn = ustrip.(Q)
+    # => Units of the inverse(Q) are the inverse units of transpose(Q).
+    Qu = 1 ./ transpose(Q)
+    @debug "premul_inv" string(Qn) string(Qu)
+    # If determinant(Q) is dimensionless, this assertion would return Unitfu.NoDims.
     # If the Q entries have mismatched dimensions, the determinant is undefined
     # and its dimension is missing. The error is thrown here. Call determinant(Q)
     # to locate the mismatched dimensions.
-    @assert determinant_dimension(Q) !== Dimensions{(Dimension{Missing}(1//1),)} "Can't invert because of mismatched dimensions (units)."
-    Bar = convert_to_array(B)
-    Bn = ustrip.(Bar)
-    Bu = oneunit.(Bar)
-    @debug "premul_inv " string(Qn) string(Bn) maxlog=1
+    @assert determinant_dimension(Q) !== Dimensions{(Dimension{Missing}(1//1),)} "Can't invert matrix because of mismatched dimensions (units)."
+    Bn = ustrip.(B)
+    Bu = oneunit.(B)
+    @debug "premul_inv " string(Bn) string(Bu) maxlog = 1
     # Numeric result
-    Mn = Qn \ Bn
-    # The reciprocal of Q has the same units as Q. Hence:
-    @debug "" string(Q) string(Qar) string(Qu) string(Bu) maxlog=1
+    Mn = convert_to_array(Qn) \ convert_to_array(Bn)
     Mu = oneunit.(Qu * Bu)
+    @debug "premul_inv " string(Mn) string(Mu) maxlog = 1
     # Elementwise factor number and unit
-    convert_to_mixed(Mn .* Mu)
+    Mn .* Mu
 end
 
 #####################################
@@ -100,24 +97,21 @@ inv(A::MixedCandidate) = isbitstype(eltype(A)) ? _inv_consistent(mixed_array_tra
 _inv(::Mixed, Q) = throw(DimensionMismatch("inversion candidate is not square: dimensions are $(size(Q))"))
 function _inv_mixed(::MatSqMut, Q)
     require_one_based_indexing(Q)
-    # If determinant(Q) is dimensionless, this assertion would return Unitfu.NoDims. 
+    # If determinant(Q) is dimensionless, this assertion would return Unitfu.NoDims.
     # If the Q entries have mismatched dimensions, the determinant is undefined
     # and its dimension is missing. The error is thrown here. Call determinant(Q)
     # to locate the mismatched dimensions.
     @assert determinant_dimension(Q) !== Dimensions{(Dimension{Missing}(1//1),)} "Can't invert because of mismatched dimensions (units)."
     # Split numeric unit matrices, treat separately
-    Qar = convert_to_array(Q)
-    Qn = ustrip.(Qar)
-    @debug "_inv_mixed" oneunit.(Qar)
-    Qu = oneunit.(Qar)
+    # Qar = convert_to_array(Q)
+    Qn = ustrip.(Q)
+    Qu = oneunit.(Q)
+    @debug "_inv_mixed" string(Qn) string(Qu) maxlog = ""
     # Dimensions of the inverse(Q) are the inverse dimensions of transpose(Q).
     # => Units of the inverse(Q) are the inverse units of transpose(Q).
-    Qu = 1 ./ transpose(Qu)
-    @debug "_inv_mixed" oneunit.(Qar)
-    @debug "_inv_mixed" string(Qn) maxlog=1
-    @debug "_inv_mixed" string(Q) string(Qar) string(Qu) maxlog=1
-     # Elementwise facor number and unitog=1
-    convert_to_mixed(inv(Qn) .* Qu)
+    Qui = convert_to_mixed(1 ./ Qu)
+     # Elementwise facor number and unitog = 1
+    inv(Qn) .* transpose(Qui)
 end
 function _inv_consistent(::MatSqMut, Q)
     require_one_based_indexing(Q)

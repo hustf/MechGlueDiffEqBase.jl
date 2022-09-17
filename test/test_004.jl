@@ -1,4 +1,4 @@
-# Check behaviour of immutable ArrayPartition 
+# Check behaviour of immutable ArrayPartition
 # with `UNITLESS_ABS2`, `similar`, `ODE_DEFAULT_NORM`
 using Test
 using MechGlueDiffEqBase
@@ -73,6 +73,6 @@ end
     v0 = [1.0km/s, 2.0km/s, 3.0m/s², 4m/s²]
     rv0 = ArrayPartition(vcat(r0, v0)...)
     @test @inferred(ODE_DEFAULT_NORM(1.0km, 0)) === 1.0
-    @test @inferred(ODE_DEFAULT_NORM(r0, 0)) === sqrt((1.0 + 4 + 9 + 16) / 4) 
-    @test @inferred(ODE_DEFAULT_NORM(rv0, 0)) === sqrt((1.0 + 4 + 9 + 16) / 4) 
+    @test @inferred(ODE_DEFAULT_NORM(r0, 0)) === sqrt((1.0 + 4 + 9 + 16) / 4)
+    @test @inferred(ODE_DEFAULT_NORM(rv0, 0)) === sqrt((1.0 + 4 + 9 + 16) / 4)
 end

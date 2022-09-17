@@ -1,5 +1,5 @@
 # Concerning mutable fixed-length mixed arrays.
-# This extends RecursiveArrayTools.jl and 
+# This extends RecursiveArrayTools.jl and
 # may fit more naturally in a separate glue package or as PRs.
 using Test
 using MechGlueDiffEqBase
@@ -12,10 +12,10 @@ using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle, unpack, Array
 import LinearAlgebra
 @import_expand(cm, kg, s)
 #############################################
-# A Mutable fixed-length mixed arrays. 
+# A Mutable fixed-length mixed arrays.
 # We want these to be inferrable,
-# which the standard matrix type, e.g. 
-#     Any[1 2kg; 3 4] 
+# which the standard matrix type, e.g.
+#     Any[1 2kg; 3 4]
 # is often not. For inferrability, we implement
 # as nested ArrayPartitions. For mutability,
 # the innermost type is a one-element vector.
@@ -50,7 +50,7 @@ import LinearAlgebra
     @test !is_square_matrix_mutable(Mn3x2)
     @test !is_square_matrix_mutable(Vn1)
     @test !is_square_matrix_mutable(Vu3)
-    #    
+    #
     @test !is_vector_mutable_stable(E)
     @test !is_vector_mutable_stable(Mn1)
     @test !is_vector_mutable_stable(Mn2)
@@ -104,7 +104,7 @@ import LinearAlgebra
     @test replace(repr(:"text/plain", Mn2, context = :color=>true), "RecursiveArrayTools." => "") == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}:\n 1  2\n 3  4"
     @test sprint(io -> print(IOContext(io, :color => true), Mn2)) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
     @test replace(repr(Mu2, context = :color=>true), "RecursiveArrayTools." => "") == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
-    @test replace(repr(:"text/plain", Mu2, context = :color=>true), "RecursiveArrayTools." => "", "Unitfu." => "") == 
+    @test replace(repr(:"text/plain", Mu2, context = :color=>true), "RecursiveArrayTools." => "", "Unitfu." => "") ==
         "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᵀ, FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}}}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m\n  3\e[36ms\e[39m  4\e[36mkg\e[39m"
     @test sprint(io -> print(IOContext(io, :color => true), Mu2)) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
     @test repr(Mn3, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1 2 3; 4 5 6; 7 8 9]\e[36m)\e[39m"
@@ -120,7 +120,7 @@ import LinearAlgebra
     @test repr(Vu3, context = :color=>true) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
     @test repr(:"text/plain", Vu3, context = :color=>true) == "3-element mutable ArrayPartition:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n                3.0"
     @test sprint(io -> print(IOContext(io, :color => true), Vu3)) == "\e[36mconvert_to_mixed(\e[39m1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0\e[36m)\e[39m"
-    
+
     @test @inferred(transpose(Mn1)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Mu1)) isa LinearAlgebra.Transpose
     tMn2 = transpose(Mn2)
@@ -136,8 +136,8 @@ import LinearAlgebra
 end
 @testset "A Mutable fixed-length mixed arrays - Inferred broadcast and mapping" begin
      # Inferred broadcast of mixed matrices, also mapping.
-    # n:dimensionless d: dimension, M: Matrix, V: Vector, E: empty, 0-3: size, i: immutable, 
-    # a: array as normal, b: lazy broadcast prototype with function, B lazy broadcast prototype 
+    # n:dimensionless d: dimension, M: Matrix, V: Vector, E: empty, 0-3: size, i: immutable,
+    # a: array as normal, b: lazy broadcast prototype with function, B lazy broadcast prototype
     # with two-argument function
     Vu3a = [1.0s⁻¹, 2.0s⁻², 3.0]
     Vn1 = ArrayPartition([1.0])
@@ -313,7 +313,7 @@ end
     @test_throws DimensionError Mu3[2, 3] = 8cm
 end
 ##################################
-# C More conversion / construction 
+# C More conversion / construction
 ##################################
 @testset "C More conversion / construction  - Back and forward conversion, alternative construction" begin
     # Back and forward conversion
@@ -323,7 +323,7 @@ end
     A2u = [1.0kg 2s; 3s 4kg]
     Mu2 = convert_to_mixed(A2u)
     @test convert_to_array(Mu2) == A2u
-    A3u = [1kg 2 3s; 4s 5kg 6; 7kg 8 9s] 
+    A3u = [1kg 2 3s; 4s 5kg 6; 7kg 8 9s]
     Mu3 = convert_to_mixed(A3u)
     @test convert_to_array(Mu3) == A3u
     # setindex
@@ -347,7 +347,7 @@ end
     @test is_vector_mutable_stable( convert_to_mixed(tuple([1.0s], [2.0s], [4.0s])))
     @test convert_to_mixed(1.0s⁻¹, 2.0s⁻², 4.0) == Vu3
     @test convert_to_mixed(1.0s⁻¹)[1] == 1.0s⁻¹ # Discouraged type, warned in printing statement
-    # More mixed matrices 
+    # More mixed matrices
     @test @inferred(convert_to_mixed(Mu2)) == Mu2
     @test Base.return_types(convert_to_mixed, (typeof(A2),))[1] == ArrayPartition{<:Number, <:Tuple{Vararg{Union{ArrayPartition{<:Number, <:Tuple{Vararg{Vector{<:Number}, N}}}, Vector{<:Number}}, N}}} where N
     ArrayPartition(ArrayPartition([1]kg, [3]), ArrayPartition([5.0], [4.0]cm))

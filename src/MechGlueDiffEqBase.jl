@@ -43,7 +43,7 @@ export OnceDifferentiable, DIMENSIONAL_NLSOLVE, check_isfinite
 # TODO: wash list, 'using' over 'import'
 
 # recursive types of ArrayPartition
-include("io_traits_conversion.jl") 
+include("io_traits_conversion.jl")
 
 # Extended imported functions from base are not currently exported.
 

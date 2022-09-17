@@ -34,7 +34,7 @@ end
 @testset "Newton trust region solve, Vectors" begin
     F1 = [10.0, 20.0]
     # Evaluate implicitly at known zero
-    f_2by2!(F1, [0,1]) 
+    f_2by2!(F1, [0,1])
     @test F1 == [0.0, 0.0]
     # OnceDifferentiable contains both f and df. We give prototype arguments.
     xprot1 = [NaN, NaN]
@@ -46,7 +46,8 @@ end
     r = nlsolve(df1, [ -0.5, 1.4], method = :trust_region, autoscale = true)
     @test converged(r)
     # Did we find the correct arguments?
-    @test r.zero ≈ [ 0, 1]
+    # WAS @test r.zero≈[ 0, 1]
+    @test all(isapprox.(r.zero,[ 0, 1], rtol = 1e-6))
     @test r.iterations == 4
 end
 #############################
@@ -56,7 +57,7 @@ end
 @testset "Newton trust region solve, ArrayPartition" begin
     F2 = convert_to_mixed([10.0, 20.0])
     # Evaluate implicitly at known zero
-    f_2by2!(F2, convert_to_mixed([0,1])) 
+    f_2by2!(F2, convert_to_mixed([0,1]))
     @test F2 == convert_to_mixed([0.0, 0.0])
     # df includes both f_2by2, and its 'derivative'. We supply argument prototypes to both.
     xprot2 = convert_to_mixed([NaN, NaN])
@@ -72,7 +73,8 @@ end
     r = nlsolve(df2, convert_to_mixed([ -0.5, 1.4]), method = :trust_region, autoscale = true)
     @test converged(r)
     # Did we find the correct arguments?
-    @test r.zero ≈ [ 0, 1]
+    # WAS @test r.zero≈[ 0, 1]
+    @test all(isapprox.(r.zero,[ 0, 1], rtol = 1e-6))
     @test r.iterations == 4
 end
 #############################
@@ -81,12 +83,12 @@ end
 #############################
 @testset "Newton trust region cache, ArrayPartition dimensional" begin
     function f_2by2a!(F, x)
-        F[1] = (x[1]+3kg)*(x[2]^3-7s^3)+18kg∙s³      
+        F[1] = (x[1]+3kg)*(x[2]^3-7s^3)+18kg∙s³
         F[2] = sin(x[2]*exp(x[1]/kg)/s-1)s
     end
     F3 = convert_to_mixed([10.0kg∙s³, 20.0s])
     # Evaluate implicitly at known zero
-    f_2by2a!(F3, convert_to_mixed([0kg,1s])) 
+    f_2by2a!(F3, convert_to_mixed([0kg,1s]))
     @test F3 == convert_to_mixed([0.0kg∙s³, 0.0s])
     # df includes both f_2by2, and its 'derivative'. We supply argument prototypes to both.
     xprot3 = convert_to_mixed([NaN∙kg, NaN∙s])
@@ -95,14 +97,15 @@ end
     @test MechGlueDiffEqBase.LenNTRCache(df3) isa NLsolve.AbstractSolverCache
     # Start at a point outside zero, iterate arguments until function value is zero.
 
-    #with_logger(Logging.ConsoleLogger(stderr, Logging.Debug)) do 
+    #with_logger(Logging.ConsoleLogger(stderr, Logging.Debug)) do
     #nlsolve(df3, convert_to_mixed([ -0.5∙kg; 1.4∙s]), method = :trust_region, autoscale = true)
     #end
 
     r = nlsolve(df3, convert_to_mixed([ -0.5∙kg; 1.4∙s]), method = :trust_region, autoscale = true)
     @test converged(r)
     # Did we find the correct arguments?
-    @test r.zero ≈ [ 0, 1]
+    # WAS @test r.zero≈[ 0, 1]
+    @test all(isapprox.(r.zero,[ 0, 1], rtol = 1e-6))
     @test r.iterations == 4
 end
 nothing
