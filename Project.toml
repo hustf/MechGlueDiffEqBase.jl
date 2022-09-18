@@ -1,7 +1,7 @@
 name = "MechGlueDiffEqBase"
 uuid = "2532746b-52b5-4539-9431-8bb183ab067f"
 authors = ["hustf <hustf@users.noreply.github.com> and contributors"]
-version = "0.2.8"
+version = "0.3.0"
 
 [deps]
 BoundaryValueDiffEq = "764a87c0-6b3e-53db-9096-fe964310641d"
@@ -12,6 +12,7 @@ MechanicalUnits = "e6be9192-89dc-11e9-36e6-5dbcb28f419e"
 NLSolversBase = "d41bc354-129a-5804-8e4c-c37616107c6c"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 Unitfu = "5ee08b94-2369-4f4a-b8c7-99333ba35fb0"
 

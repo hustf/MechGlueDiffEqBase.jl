@@ -12,46 +12,42 @@ end
 
 @inline function compute_epsilon(::Val{:central}, x::Quantity{T1, D, U}, relstep::Real, absstep::Real, dir = nothing) where {T1<:Real, D, U}
     @debug "compute_epsilon:14 central quantity" T1 x relstep absstep maxlog = 2
-    return max(relstep*abs(x), absstep * oneunit(x))
+    max(relstep*abs(x), absstep * oneunit(x))
 end
 
 @inline function compute_epsilon(::Val{:forward}, x::T, relstep::Real, absstep::Quantity{T1, D, U},
     dir = nothing) where {T<:Number, T1<:Real, D, U}
-    @debug "compute_epsilon:20 forward quantity" T1 x relstep absstep maxlog = 2
+    @debug "compute_epsilon:21 forward quantity" T1 x relstep absstep maxlog = 2
     max(relstep * oneunit(absstep), absstep)
 end
 
 @inline function compute_epsilon(::Val{:forward}, x::Quantity{T1, D, U}, relstep::Real, absstep::Real, dir = nothing) where {T1<:Real, D, U}
-    @debug "compute_epsilon:25 forward quantity" T1 x relstep absstep maxlog = 2
-    throw("unused, untested")
-    return max(relstep*abs(x), absstep)
+    @debug "compute_epsilon:26 forward quantity" T1 x relstep absstep maxlog = 2
+    max(relstep*abs(x), absstep * oneunit(x))
 end
 
 @inline function compute_epsilon(::Val{:complex}, x::Quantity{T, D, U}, ::Union{Nothing,T1} = nothing,
     ::Union{Nothing,Quantity{T, D, U}} = nothing, dir = nothing) where {T1<:Real, T<:Real, D, U}
-    @debug "compute_epsilon:32 complex quantity" T x relstep absstep maxlog = 2
-    throw("unused, untested")
-    eps(Quantity{T, D, U})
+    @debug "compute_epsilon:33 complex quantity" T x relstep absstep maxlog = 2
+    eps(T)∙oneunit(x)
 end
 
 @inline function compute_epsilon(::Val{:complex}, x::Quantity{T1, D, U}, relstep::Real, absstep::Real, dir = nothing) where {T1<:Real, D, U}
-    @debug "compute_epsilon complex quantity" x relstep absstep maxlog = 2
-    throw("unused, untested")
-    return eps(Quantity{T, D, U})
+    @debug "compute_epsilon:38 complex quantity" x relstep absstep maxlog = 2
+    eps(T1)∙oneunit(x)
 end
-
 
 ##############################
 # (Updating) Jacobian matrices
 # with mixed element types
 ##############################
 
-# From FiniteDiff\src\derivatives.jl:4. The only change here is the default absstep argument.
+# From FiniteDiff\src\derivatives.jl:4.
 function finite_difference_derivative(
     f,
     x::T,
     fdtype = Val(:central),
-    returntype = eltype(x),
+    returntype = eltype(ustrip(x)),
     f_x = nothing;
     relstep = default_relstep(fdtype, T),
     absstep = relstep * oneunit(x),
@@ -59,6 +55,7 @@ function finite_difference_derivative(
 
     fdtype isa Type && (fdtype = fdtype())
     epsilon = compute_epsilon(fdtype, x, relstep, absstep, dir)
+
     if fdtype == Val(:forward)
         return (f(x+epsilon) - f(x)) / epsilon
     elseif fdtype == Val(:central)

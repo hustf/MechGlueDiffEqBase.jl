@@ -67,27 +67,8 @@ end
 (\)(A::MixedCandidate, B::AbstractVector) = premul_inv(mixed_array_trait(A), A, B)
 premul_inv(::VecMut, A, B) = A \ B
 function premul_inv(::MatSqMut, Q, B::AbstractVector)
-    # TODO compare with inv(Q) and possibly use that.
-    require_one_based_indexing(Q, B)
-    # Split numeric unit matrices, treat separately
-    Qn = ustrip.(Q)
-    # => Units of the inverse(Q) are the inverse units of transpose(Q).
-    Qu = 1 ./ transpose(Q)
-    @debug "premul_inv" string(Qn) string(Qu)
-    # If determinant(Q) is dimensionless, this assertion would return Unitfu.NoDims.
-    # If the Q entries have mismatched dimensions, the determinant is undefined
-    # and its dimension is missing. The error is thrown here. Call determinant(Q)
-    # to locate the mismatched dimensions.
-    @assert determinant_dimension(Q) !== Dimensions{(Dimension{Missing}(1//1),)} "Can't invert matrix because of mismatched dimensions (units)."
-    Bn = ustrip.(B)
-    Bu = oneunit.(B)
-    @debug "premul_inv " string(Bn) string(Bu) maxlog = 1
-    # Numeric result
-    Mn = convert_to_array(Qn) \ convert_to_array(Bn)
-    Mu = oneunit.(Qu * Bu)
-    @debug "premul_inv " string(Mn) string(Mu) maxlog = 1
-    # Elementwise factor number and unit
-    Mn .* Mu
+    Qi = _inv_mixed(MatSqMut(), Q)
+    Qi * B
 end
 
 #####################################

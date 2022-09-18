@@ -1,19 +1,11 @@
 # These extend functions in NLSolversbase
-
-
 # NLSolversBase\src\objective_types\abstract.jl:19
-# was alloc_DF(x::ArrayPartition{<:AbstractQuantity, <:Tuple} , F)
-# This type piracy is considered necessary, but could perhaps be less
-# intrusive with traits-based application.
-function alloc_DF(x::RW(N), F::RW(N)) where N
-    @debug "alloc_DF:9" string(x) string(F) maxlog = 2
-    jprot = jacobian_prototype_nan(x, F)
-    @debug "alloc_DF" string(jprot) maxlog = 2
-    jprot
+alloc_DF(x::MixedCandidate, F::MixedCandidate) = _alloc_DF(mixed_array_trait(x), mixed_array_trait(F), x, F) 
+
+function _alloc_DF(::VecMut, ::VecMut, x, F)
+    @debug "_alloc_DF:6" string(x) string(F) maxlog = 2
+    jacobian_prototype_nan(x, F)
 end
-
-
-
 
 
 "Extend NLSolversbase/oncedifferentiable.jl:227, called from oncedifferentiable.jl:97"
@@ -69,7 +61,9 @@ function convert_to_arraypartition(A::AbstractArray{<:FreeUnits})
     end
 end
 
+###########
 # Dead code
+###########
 "This could extend Base.(*), but we would want to examine the Julia conventions better first."
 function matmulvec(A::AbstractMatrix{T}, x::AbstractVector{T}) where T<:FreeUnits
     throw("Not used")

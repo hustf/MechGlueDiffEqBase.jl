@@ -1,3 +1,60 @@
+# Type based on NLsolve/src/solver_state_results.jl 
+mutable struct SolverResultsDimensional{N, T<:Real}
+    method::String
+    initial_x::RW(N)
+    zero::RW(N)
+    residual_norm::T
+    iterations::Int
+    x_converged::Bool
+    xtol::T
+    f_converged::Bool
+    ftol::T
+    trace::NLsolve.SolverTrace
+    f_calls::Int
+    g_calls::Int
+end
+
+function converged(r::SolverResultsDimensional)
+    return r.x_converged || r.f_converged
+end
+
+function Base.show(io::IO, r::SolverResultsDimensional)
+    @printf io "Results of dimensional Nonlinear Solver Algorithm\n"
+    @printf io " * Algorithm: %s\n" r.method
+    @printf io " * Starting Point: %s\n" string(r.initial_x)
+    @printf io " * Zero: %s\n" string(r.zero)
+    @printf io " * Inf-norm of residuals: %f\n" r.residual_norm
+    @printf io " * Iterations: %d\n" r.iterations
+    @printf io " * Convergence: %s\n" converged(r)
+    @printf io "   * |x - x'| < %.1e: %s\n" r.xtol r.x_converged
+    @printf io "   * |f(x)| < %.1e: %s\n" r.ftol r.f_converged
+    @printf io " * Function Calls (f): %d\n" r.f_calls
+    @printf io " * Jacobian Calls (df/dx): %d" r.g_calls
+    return
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###########
+# Dead code
+###########
+
 """
     DIMENSIONAL_NLSOLVE(bvloss, u0)
 
@@ -25,6 +82,7 @@ We internally extract the captured variables of `bvloss` as fields:
 - `bvloss.bc`
 """
 function DIMENSIONAL_NLSOLVE(bvloss, u0)
+    throw("dead code, does the same as DEFAULT_SOLVE. May be useful later?")
     # This is identical to DEFAULT_NLSOLVE now. TODO: Delete. Use inline doc elsewhere?
 
 
@@ -69,6 +127,7 @@ end
 # and this way we can determine the Jacobian of the loss function.
 
 function __solve(prob::BVProblem{U}, alg::Shooting; kwargs...) where {U<:Tuple{<:ArrayPartition, <:ArrayPartition}}
+    throw("That triggers me.")
     bc = prob.bc
     u0 = deepcopy(prob.u0[1])
     resid0 = deepcopy(prob.u0[2])

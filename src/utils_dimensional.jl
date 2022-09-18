@@ -81,57 +81,28 @@ ERROR: DimensionMismatch: in determinant, Δ = 1 * 3cm∙s * -3s = -9cm∙s²   
 """
 function determinant(A::AbstractArray)
     r, n = size(A)
-    @assert r == n
+    @assert r == n "r = $r, n = $n not square"
     if n == 1
-        return first(A)
-    end
-    cols = collect(2:n)
-    entry = first(A)
-    cofactor = minor_subdet(A, cols)
-    accum = entry * cofactor
-    # println(repeat(' ', 41- 4 * min(n, 10)), "$entry * $cofactor = ", accum)
-    for j in 2:n
-        entry = A[1, j]
-        sig = 1 - 2 * iseven(j)
-        cols[j-1] = j - 1
-        subdet = minor_subdet(A, cols)
-        cofactor = sig * subdet
-        Δ = entry * cofactor
-        # println(repeat(' ', 41- 4 * min(n, 10)), "$entry * $cofactor = ", Δ)
-        if dimension(Δ) === dimension(accum)
-            # println(repeat(' ', 31- 3 * min(n, 10)), "$accum + $Δ = ", accum + Δ)
-            accum += Δ
-        else
-            msg = "in determinant, Δ = $sig * $entry * $subdet = $Δ    incompatible with accum = $accum"
-            #throw( DimensionMismatch("$(dimension(Δ)) and $(dimension(accum))"))
-            throw( DimensionMismatch(msg))
-        end
-    end
-    accum
-end
-
-"""
-    minor_subdet(A, cols)
-
-Determinant of the minor of A defined by excluding
-the first row of `A`, including the sorted column numbers
-`cols`.
-
-Example
-
-```
-julia> minor_subdet([2 3; 4 5kg/s], [2])
-5kg∙s⁻¹
-```
-"""
-@inline function minor_subdet(A, cols)
-    v = view(A, 2:(1 + length(cols)), cols)
-    if length(cols) == 1
-        return first(v)
+        first(A)
     else
-        return determinant(v)
+        accum = first(A) * determinant(@view A[2:n, 2:n])
+        rngn = 1:n
+        for j in 2:n
+            entry = A[1, j]
+            sig = 1 - 2 * iseven(j)
+            cofactor = determinant(@view A[2:end, rngn .!= j])
+            Δ = sig * entry *  cofactor
+            if dimension(Δ) === dimension(accum)
+                accum += Δ
+            else
+                msg = "in determinant, Δ = $sig * $entry * $cofactor = $Δ is incompatible with accum = $accum"
+                throw( DimensionMismatch(msg))
+            end
+        end
+        accum
     end
 end
+
 
 """
     determinant_dimension(A)
@@ -192,48 +163,23 @@ Dimensions{(Dimension{Missing}(1//1),)}
 function determinant_dimension(A)
     # Variable names are kept from `determinant_A`
     r, n = size(A)
-    @assert r == n
-    cols = collect(2:n)
-    entry = dimension(first(A))
-    cofactor = minor_subdet_dimension(A, cols)
-    accum = entry * cofactor
-    for j in 2:n
-        entry = dimension(A[1, j])
-        # Sign is irrelevant
-        cols[j-1] = j - 1
-        cofactor = minor_subdet_dimension(A, cols)
-        Δ = entry * cofactor
-        if Δ === accum
-            # Addition won't change the dimensions of accum
-        else
-            return Dimensions{(Dimension{Missing}(1//1),)}
-        end
-    end
-    accum
-end
-
-"""
-    minor_subdet_dimension(A, cols)
-
-Dimension of the determinant of the minor of A defined by excluding
-the first row of `A`, including the sorted column numbers
-`cols`.
-
-    Example
-
-```
-julia> dimension(1kg/s)
- ᴹ∙ ᵀ⁻¹
-
-julia> minor_subdet_dimension([1 2; 3 4kg/s], [2])
-ᴹ∙ ᵀ⁻¹
-```
-"""
-@inline function minor_subdet_dimension(A, cols)
-    v = view(A, 2:(1 + length(cols)), cols)
-    if length(cols) == 1
-        return dimension(first(v))
+    @assert r == n "r = $r, n = $n not square"
+    if n == 1
+        dimension(typeof(first(A)))
     else
-        return determinant_dimension(v)
+        accum = dimension(first(A)) * determinant_dimension(@view A[2:n, 2:n])
+        rngn = 1:n
+        for j in 2:n
+            entry = dimension(A[1, j])
+            # Sign is irrelevant
+            cofactor = determinant_dimension(@view A[2:end, rngn .!= j])
+            Δ = entry * cofactor
+            if Δ === accum
+                # Addition won't change these compatible dimensions
+            else
+                return Dimensions{(Dimension{Missing}(1//1),)}
+            end
+        end
+       accum
     end
 end

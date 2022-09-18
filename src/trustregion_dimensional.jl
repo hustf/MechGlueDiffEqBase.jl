@@ -72,7 +72,7 @@ function trust_region_(df::OnceDifferentiable,
         if autoscale
             name *= " and autoscaling"
         end
-        return SolverResults(name,
+        return SolverResultsDimensional(name,
             initial_x, copy(cache.x), norm(cache.r, Inf),
             it, x_converged, xtol, f_converged, ftol, tr,
             first(df.f_calls), first(df.df_calls))
@@ -113,28 +113,44 @@ function trust_region_(df::OnceDifferentiable,
         # Compute proposed iteration step
         dogleg_dimensional!(cache.p, cache.p_c, cache.pi, cache.r, cache.d, NLsolve.jacobian(df), delta)
         copyto!(cache.xold, cache.x)
-        cache.x .+= cache.p
+        cache.x .+= cache.p .* unit.(cache.x)
+        @debug "trustregion_:117" it string(cache.x) maxlog = 10
+
         NLsolve.value!(df, cache.x)
-
+        @debug "trustregion_:120" string(cache.r_predict) string(NLsolve.jacobian(df)) string(cache.p) maxlog = 1
         # Ratio of actual to predicted reduction (equation 11.47 in N&W)
-        mul!(vec(cache.r_predict), NLsolve.jacobian(df), vec(cache.p))
+        #mul!(vec(cache.r_predict), NLsolve.jacobian(df), vec(cache.p))
+        mul!(cache.r_predict, NLsolve.jacobian(df), cache.p .* unit.(cache.x))
+        @debug "trustregion_:124" string(cache.r_predict) string(cache.r)
         cache.r_predict .+= cache.r
-
-        rho = (sum(abs2, cache.r) - sum(abs2, NLsolve.value(df))) / (sum(abs2, cache.r) - sum(abs2, cache.r_predict))
-        @debug "trustregion_" it T rho eta
+        @debug "trustregion_:126"  rho sum(UNITLESS_ABS2, cache.r) 
+        @debug "trustregion_:127"  sum(UNITLESS_ABS2, NLsolve.value(df))
+        @debug "trustregion_:128" sum(UNITLESS_ABS2, cache.r) 
+        @debug "trustregion_:129" sum(UNITLESS_ABS2, cache.r_predict)
+        @debug "trustregion_:130" (sum(UNITLESS_ABS2, cache.r) - sum(UNITLESS_ABS2, cache.r_predict))
+        @debug "trustregion_:131" (sum(UNITLESS_ABS2, cache.r) - sum(UNITLESS_ABS2, NLsolve.value(df)))
+        #rho = (sum(abs2, cache.r) - sum(abs2, NLsolve.value(df))) / (sum(abs2, cache.r) - sum(abs2, cache.r_predict))
+        rho = (sum(UNITLESS_ABS2, cache.r) - sum(UNITLESS_ABS2, NLsolve.value(df))) / (sum(UNITLESS_ABS2, cache.r) - sum(UNITLESS_ABS2, cache.r_predict))
+        @debug "trustregion_:134" it T rho eta
         if rho > eta
             # Successful iteration
+            @debug "trustregion_:137 success" 
             cache.r .= NLsolve.value(df)
+            @debug "trustregion_:139 update jacobian" 
             NLsolve.jacobian!(df, cache.x)
-
+            @debug "trustregion_:139 update scaling " 
             # Update scaling vector
             if autoscale
                 for j = 1:nn
-                    cache.d[j] = max(convert(real(T), 0.1) * real(cache.d[j]), norm(view(NLsolve.jacobian(df), :, j)))
+                    #cache.d[j] = max(convert(real(T), 0.1) * real(cache.d[j]), norm(view(NLsolve.jacobian(df), :, j)))
+                    # cache.d[j] = norm(view(ustrip(J), :, j))
+                    cache.d[j] = max(convert(real(T), 0.1) * real(cache.d[j]), ODE_DEFAULT_NORM(view(NLsolve.jacobian(df), :, j), 2))
+                    @debug "trustregion_:148 norm col $j " ODE_DEFAULT_NORM(view(NLsolve.jacobian(df), :, j), 0)
                 end
             end
-
+            @debug "trustregion_:151"
             x_converged, f_converged = assess_convergence(ustrip(cache.x), ustrip(cache.xold), ustrip(cache.r), xtol, ftol)
+            @debug "trustregion_:153"
             converged = x_converged || f_converged
         else
             cache.x .-= cache.p
@@ -158,11 +174,36 @@ function trust_region_(df::OnceDifferentiable,
     if autoscale
         name *= " and autoscaling"
     end
-    return NLsolve.SolverResults(name,
-        initial_x, copy(cache.x), maximum(abs, cache.r),
-        it, x_converged, xtol, f_converged, ftol, tr,
-        first(df.f_calls), first(df.df_calls))
-    true
+    @debug "trustregion_:177 method" name 
+    @debug "trustregion_:178 inital_x" string(ustrip.(initial_x))
+    @debug "trustregion_:179 zero" string(ustrip.(copy(cache.x)))
+    @debug "trustregion_:180" it
+    @debug "trustregion_:181" x_converged
+    @debug "trustregion_:182" xtol
+    @debug "trustregion_:183" f_converged
+    @debug "trustregion_:184" ftol
+    @debug "trustregion_:185" tr 
+
+    #
+
+    # TODO: create new type for results, implement `zero` and 'show'. Also check NLSolversBase for other methods.
+    #  rT<:Real,T<:Union{rT,Complex{rT}},I<:AbstractArray{T},Z<:AbstractArray{T}
+    return SolverResultsDimensional(name,            # method::String
+            initial_x,                            # initial_x::I
+            copy(cache.x),                        # zero::Z
+            maximum(x-> abs(ustrip(x)), cache.r), # residual_norm::rT
+            it,                                   # iterations::Int
+            x_converged,                          # x_converged::Bool
+            xtol,                                 # xtol::rT
+            f_converged,                          # f_converged::Bool
+            ftol,                                 # ftol::rT
+            tr,                                   # trace::SolverTrace
+            first(df.f_calls),                    # f_calls::Int
+            first(df.df_calls))                   # g_calls::Int
+#            return SolverResults(name,
+#            initial_x, copy(cache.x), maximum(abs, cache.r),
+#            it, x_converged, xtol, f_converged, ftol, tr,
+#            first(df.f_calls), first(df.df_calls))     
 end
 function trust_region(df::OnceDifferentiable,
     initial_x::RW(N),
@@ -185,10 +226,9 @@ function dogleg_dimensional!(p, p_c, p_i,
                  r, d, J, delta::Real)
     T = eltype(d)
     @debug "dogleg_dimensional!:188" string(p) string(p_c) string(p_i) string(r) string(d) string(J) delta maxlog = 2
-    dimstep = J \ r
-    p_i = ustrip(dimstep)
+    # TODO do this in-place. Propagate errors like commented below.
     #try
-        copyto!(p_i, J \ vec(r)) # Gauss-Newton step
+        copyto!(p_i, ustrip.(J \ r))# Gauss-Newton step
     #catch e
     #    if isa(e, LAPACKException) || isa(e, SingularException)
             # If Jacobian is singular, compute a least-squares solution to J*x+r = 0
@@ -201,29 +241,32 @@ function dogleg_dimensional!(p, p_c, p_i,
     #        throw(e)
     #    end
     #end
-    rmul!(p_i, -one(T))
-
+    @debug "dogleg_dimensional!:204" string(p_i) T maxlog = 5
+    NLsolve.rmul!(p_i, -one(T))
+#    NLsolve.rmul!(p_i, -one(T))
     # Test if Gauss-Newton step is within the region
-    if wnorm(d, p_i) <= delta
+    if NLsolve.wnorm(d, p_i) <= delta
         copyto!(p, p_i)   # accepts equation 4.13 from N&W for this step
     else
         # For intermediate we will use the output array `p` as a buffer to hold
         # the gradient. To make it easy to remember which variable that array
         # is representing we make g an alias to p and use g when we want the
         # gradient
-
         # compute g = J'r ./ (d .^ 2)
         g = p
-        mul!(vec(g), transpose(J), vec(r))
+        @debug "dogleg_dimensional!:258" string(g) string(J) string(r)
+        #mul!(vec(g), transpose(J), vec(r))
+        g .= ustrip.(J \ r)
+        @debug "dogleg_dimensional!:261" string(g)
         g .= g ./ d.^2
-
+        @debug "dogleg_dimensional!:263" string(g) string(d)
         # compute Cauchy point
-        p_c .= -wnorm(d, g)^2 / sum(abs2, J*vec(g)) .* g
-
-        if wnorm(d, p_c) >= delta
+        p_c .= -NLsolve.wnorm(d, g)^2 / UNITLESS_ABS2(ustrip(J) * g) .* g
+        @debug "dogleg_dimensional!:266" string(p_c) delta NLsolve.wnorm(d, p_c)
+        if NLsolve.wnorm(d, p_c) >= delta
             # Cauchy point is out of the region, take the largest step along
             # gradient direction
-            rmul!(g, -delta/wnorm(d, g))
+            NLsolve.rmul!(g, -delta/NLsolve.wnorm(d, g))
 
             # now we want to set p = g, but that is already true, so we're done
 
@@ -235,9 +278,9 @@ function dogleg_dimensional!(p, p_c, p_i,
             p_diff = p_i
 
             # Compute the optimal point on dogleg path
-            b = 2 * wdot(d, p_c, d, p_diff)
-            a = wnorm(d, p_diff)^2
-            tau = (-b + sqrt(b^2 - 4a*(wnorm(d, p_c)^2 - delta^2)))/(2a)
+            b = 2 * NLsolve.wdot(d, p_c, d, p_diff)
+            a = NLsolve.wnorm(d, p_diff)^2
+            tau = (-b + sqrt(b^2 - 4a*(NLsolve.wnorm(d, p_c)^2 - delta^2)))/(2a)
             p_c .+= tau .* p_diff
             copyto!(p, p_c)
         end

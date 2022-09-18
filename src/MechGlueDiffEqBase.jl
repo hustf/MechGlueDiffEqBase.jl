@@ -1,7 +1,8 @@
 module MechGlueDiffEqBase
+# TODO: Don't import. Use!
 import Base: similar, getindex, setindex!, inv, +, -, zip
 import Unitfu: AbstractQuantity, Quantity, ustrip, norm, unit, zero, numtype
-import Unitfu: uconvert, dimension
+import Unitfu: uconvert, dimension, ∙
 import Unitfu: Dimensions, Dimension, FreeUnits, NoUnits, DimensionlessQuantity
 import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2, remake, abs2_and_sum
 import DiffEqBase: calculate_residuals, @muladd, __solve, BVProblem, solve
@@ -18,13 +19,14 @@ import Base: show, summary, print, setindex, size, ndims
 import Base: \, IndexStyle, axes, BroadcastStyle, Broadcast.combine_styles, copy
 using Base: array_summary, throw_boundserror, broadcasted
 using OrdinaryDiffEq.FiniteDiff: _vec
+using Printf
 import OrdinaryDiffEq.ArrayInterface
 import NLSolversBase
 import NLSolversBase: alloc_DF, OnceDifferentiable, NonDifferentiable, x_of_nans
 using NLSolversBase: f!_from_f, df!_from_df, fdf!_from_fdf, value_jacobian!!, AbstractObjective
 import NLsolve
-import NLsolve: nlsolve, trust_region, assess_convergence, check_isfinite
-using NLsolve: NewtonTrustRegionCache, dogleg!, converged
+import NLsolve: nlsolve, trust_region, assess_convergence, check_isfinite, converged
+using NLsolve: NewtonTrustRegionCache, dogleg!
 import LinearAlgebra
 using LinearAlgebra: require_one_based_indexing, istril, istriu, lu, wrapperop, MulAddMul
 import LinearAlgebra: mul!, *
