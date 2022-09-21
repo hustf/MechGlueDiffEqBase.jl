@@ -1,0 +1,9 @@
+2022-09-21 test_010.jl
+Test Summary:                                                          | Pass  Total  Time
+A Mutable fixed-length mixed arrays - direct construction and printing |   90     90  5.9s
+Test Summary:                                                        | Pass  Total   Time
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  18.2s
+Test Summary:                                                                  | Pass  Total  Time
+B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |    6      6  0.2s
+Test Summary:                                                                             | Pass  Total  Time
+C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  2.1s

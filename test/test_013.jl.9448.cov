@@ -1,0 +1,79 @@
+        - # Differential equations with mixed units.
+        - # Re-formulation of test_005.jl; the solution is vector-like
+        - # instead of matrix-like.
+        - 
+        - using MechGlueDiffEqBase
+        - using MechanicalUnits: @import_expand, ∙, g
+        - @import_expand(km, s, m, kg,  inch, °)
+        - using OrdinaryDiffEq: ODEProblem
+        - using DifferentialEquations: solve, Tsit5
+        - using Logging: disable_logging, LogLevel, Debug, with_logger
+        - import Logging
+        - using Test
+        - using Test: @inferred
+        - 
+        - @testset "Mixed mutable vector argument diffeq" begin
+        -     # Constants we don't think we'll change ever
+        -     x₀ = 0.0km
+        -     y₀ = 0.0km
+        -     ø = 15inch
+        -     ρ = 1.225kg/m³
+        - 
+        -     # Calculated constants
+        -     Aₚᵣ = π/4 * ø^2
+        -     # Constants that we define as functions, because we may
+        -     # want to modify them later in the same scripting session.
+        2     α₀()  = 30°
+        2     v₀()  = 1050m/s
+        - 
+        6     mₚ()   = 495kg
+        5     C_s() = 0.4
+        1     x´₀() = v₀() * cos(α₀())
+        1     y´₀() = v₀() * sin(α₀())
+        - 
+        -     # Local tuple initial condition.
+        -     u₀ = convert_to_mixed(x₀, y₀, x´₀(), y´₀())
+        - 
+        - 
+        -     # Functions
+      176     v(vx, vy) = √(vx^2 + vy^2)
+      176     R(vx, vy) = 0.5∙ρ∙C_s()∙Aₚᵣ∙v(vx, vy)^2
+      176     α(vx, vy) = atan(vy, vx)
+       88     Rx(vx, vy) = R(vx, vy) * cos(α(vx, vy))
+       88     Ry(vx, vy) = R(vx, vy) * sin(α(vx, vy))
+        - 
+        - 
+        -     # Local tuple, i.e. the interesting degrees of freedom
+        -     # and their derivatives
+       88     function  Γ!(u´, u, p, t)
+       88         x, y, x´, y´ = u
+       88         @debug "Γ!"    x    y    x´   y´   maxlog = 2
+        -         # Calculate the acceleration for this step
+      176         x´´ =     -Rx(x´, y´) / mₚ()
+      176         y´´ = -1g -Ry(x´, y´) / mₚ()
+       90         @debug "! Acceleration"    x´´|> g    y´´|>g    maxlog = 2
+       88         u´ .= x´, y´, x´´, y´´
+       88         u´
+        -     end
+        - 
+        2     function solve_guarded(u₀; alg = Tsit5(), debug = false)
+        -         # Test the functions
+        1         @inferred Γ!(u₀/s,u₀, nothing, nothing)
+        1         !debug  && disable_logging(Debug)
+        1         prob = ODEProblem( Γ!,u₀,(0.0,60)s)
+        1         sol = if debug
+        1             with_logger(Logging.ConsoleLogger(stderr, Logging.Debug)) do
+        1                 solve(prob, alg)
+        -             end
+        -         else
+        1             solve(prob, alg)
+        -         end
+        -         # Re-enable
+        1         disable_logging(LogLevel(Debug-1))
+        1         sol
+        -     end
+        -     sol = solve_guarded(u₀, debug = true);
+        -     @test sol(60s)[1] > 23km
+        - end
+        - 
+        - nothing

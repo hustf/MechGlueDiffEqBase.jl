@@ -29,7 +29,7 @@ function f_2by2!(F, x)
     F[2] = sin(x[2] * exp(x[1]) - 1)
     F
 end
-function f_2by2!(F::ArrayPartition{<:Quantity}, x) where N
+function f_2by2!(F::ArrayPartition{<:Quantity}, x)
     F[1] = (x[1] + 3kg) * (x[2]^3 - 7s^3) + 18kg∙s³
     F[2] = sin(x[2] * exp(x[1]/kg) /s -1 )s
     F

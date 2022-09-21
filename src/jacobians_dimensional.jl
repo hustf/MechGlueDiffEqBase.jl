@@ -1,6 +1,10 @@
 # From FiniteDiff\src\jacobians.jl:133
 # Dispatches on mutable ArrayParitions, the only other change is
 # default absstep, which needs to conform to the units of x.
+
+# TODO: Don't dispatch on quantity. Dispatch on ArrayPartition if necessary.
+
+#=
 function finite_difference_jacobian(f, x::ArrayPartition,
     fdtype::Val     = Val(:forward),
     returntype = fdtype == Val(:complex) ? numtype(eltype(f(x))) : eltype(f(x)),
@@ -16,9 +20,11 @@ function finite_difference_jacobian(f, x::ArrayPartition,
     throw("unused?")
     finite_difference_jacobian(f, x_mutable, fdtype, returntype, f_in; relstep, absstep, colorvec, sparsity, jac_prototype, dir)
 end
+=#
+#=
 function finite_difference_jacobian(f, x::RW(N),
     fdtype::Val     = Val(:forward),
-    returntype = fdtype == Val(:complex) ? numtype(eltype(f(x))) : eltype(f(x)),
+    returntype = eltype(ustrip(x)), #fdtype == Val(:complex) ? numtype(eltype(f(x))) : eltype(f(x)),
     f_in       = nothing;
     relstep = default_relstep(fdtype, eltype(x)),
     absstep = relstep .* oneunit.(x), # Units can vary between 'rows' in the ArrayPartition.
@@ -35,29 +41,32 @@ function finite_difference_jacobian(f, x::RW(N),
     end
     if fdtype == Val(:complex)
         xcomp = complex.(zero(x))
+        @debug "finite_difference_jacobian:38" string(xcomp) string(f(xcomp)) fdtype returntype
         cache = JacobianCache(xcomp, f(xcomp), fdtype, returntype)
     else
+        @debug "finite_difference_jacobian:41" string(x) string(fx) fdtype returntype
         cache = JacobianCache(x, fx, fdtype, returntype)
     end
     # Targeting method defined below, which is extending
     # FiniteDiff\src\jacobians.jl:155.
-    @debug "finite_difference_jaco"
+    @debug "finite_difference_jacobian:46" returntype
     finite_difference_jacobian(f, x, cache, f_in;
         relstep, absstep, colorvec, sparsity, jac_prototype, dir)
 end
-
+=#
+#=
 function finite_difference_jacobian(
     f,
     x::ArrayPartition,
-    cache::JacobianCache{T1,T2,T3,cType,sType,fdtype,returntype},
+    cache::JacobianCache{T1,T2,T3,T4,ColorType,SparsityType,fdtype,returntype},
     f_in = nothing;
     relstep = default_relstep(fdtype, eltype(x)),
     absstep = relstep,
     colorvec = cache.colorvec,
     sparsity = cache.sparsity,
     jac_prototype = nothing,
-    dir = true) where {T1,T2,T3,cType,sType,fdtype,returntype}
-    @debug "finite_difference_jacobian:60" string(x) fdtype returntype f_in T1 T2 T3 typeof(cache) maxlog = 2
+    dir = true) where {T1,T2,T3,T4,ColorType,SparsityType,fdtype,returntype}
+    @debug "finite_difference_jacobian:61" string(x) fdtype returntype f_in T1 T2 T3 typeof(cache) maxlog = 2
     x1, fx, fx1 = cache.x1, cache.fx, cache.fx1
 
     if !(f_in isa Nothing)
@@ -218,3 +227,4 @@ function finite_difference_jacobian(
     end
     J
 end
+=#

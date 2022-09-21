@@ -1,0 +1,7 @@
+2022-09-21 test_001.jl
+Test Summary: | Pass  Total  Time
+ODE           |    5      5  2.0s
+Test Summary: | Pass  Total  Time
+ODE quantity  |    5      5  5.2s
+Test Summary:           | Pass  Total  Time
+ODE quantity algorithms |    5      5  1.2s

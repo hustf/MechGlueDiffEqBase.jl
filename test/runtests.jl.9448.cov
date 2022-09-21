@@ -1,0 +1,83 @@
+        - using Test, Dates
+        - include("debug_logger.jl")
+        - 
+        - # Setup based on Cairo.jl. Avoid re-running time consuming
+        - # tests in the same session.
+        - test_dir_path = @__DIR__
+        - 
+      130 filenumber(s) = parse(Int, join(filter!.(isdigit, collect.(s))))
+       26 function test_one_file(test_file_name)
+       26     output_log_name = replace(test_file_name,".jl" => ".log")
+       26     if isfile(output_log_name)
+       13         printstyled(output_log_name, " exists.\n"; color = 176)
+       13         @test true
+        -     else
+       13         printstyled(test_file_name, "\n"; color = 176)
+        -         # Run each sample script in a separate module to avoid pollution
+       13         s   = Symbol(test_file_name)
+       26         mod = @eval(Main, module $s end)
+       26         @time test_file_name @eval mod include($(joinpath(test_dir_path, test_file_name)))
+       13         ts = Test.get_testset()
+       13         if length(ts.results) > 0
+       13             println("\nTest results in ", output_log_name)
+        -         end
+       13         output_log_name = replace(test_file_name,".jl" => ".log")
+       13         open(output_log_name, "w") do io
+       13             println(io, Dates.today(), " ", test_file_name)
+       13             if length(ts.results) > 0
+       13                 for r in ts.results
+       46                     redirect_stdout(io) do
+       46                         Test.print_test_results(r)
+        -                     end
+       46                 end
+        -             end
+        -         end
+        -     end
+        - end
+       47 test_files = filter(str->endswith(str,".jl") && startswith(str,"test_"), readdir(test_dir_path))
+       47 log_files = filter(str->endswith(str,".log") && startswith(str,"test_"), readdir(test_dir_path))
+        - files_to_exclude = replace.(log_files, ".jl" => ".log")
+        - test_files = setdiff(test_files, files_to_exclude)
+        - 
+        - 
+        - @testset "Basic adaption to units (test_n,  n < 10)" begin
+        6     @testset "test: $test_file_name" for test_file_name in test_files
+       26         output_log_name = replace(test_file_name,".jl" => ".log")
+       26         if filenumber(test_file_name) < 10
+       10             test_one_file(test_file_name)
+        -         end
+        0     end
+        - end
+        - 
+        - @testset "Traits-based mutable recursive ArrayPartition (test_n, 9 < n < 20)" begin
+        6     @testset "test: $test_file_name" for test_file_name in test_files
+       26         if 9 < filenumber(test_file_name) < 20
+        8             test_one_file(test_file_name)
+        -         end
+        0     end
+        - end
+        - 
+        - @testset "Univariate differentiation (test_n, 19 < n < 30)" begin
+        6     @testset "test: $test_file_name" for test_file_name in test_files
+       26         if 19 < filenumber(test_file_name) < 30
+        4             test_one_file(test_file_name)
+        -         end
+        0     end
+        - end
+        - 
+        - @testset "NLSolve, Jacobian (test_n, 29 < n < 40)" begin
+        6     @testset "test: $test_file_name" for test_file_name in test_files
+       26         if 29 < filenumber(test_file_name) < 40
+        4             test_one_file(test_file_name)
+        -         end
+        0     end
+        - end
+        - 
+        - @testset "BoundaryValueDiffEq (test_n, 39 < n < 50)" begin
+        6     @testset "test: $test_file_name" for test_file_name in test_files
+       26         if 39 < filenumber(test_file_name) < 50
+        0             test_one_file(test_file_name)
+        -         end
+        0     end
+        - end
+        - nothing

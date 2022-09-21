@@ -1,0 +1,15 @@
+2022-09-21 test_012.jl
+Test Summary:      | Pass  Total  Time
+> Matrix inversion |    4      4  2.0s
+Test Summary:           | Pass  Total  Time
+> MixedMatrix inversion |    5      5  6.6s
+Test Summary:                                     | Pass  Total  Time
+> MixedMatrix inversion with dimensional diagonal |    7      7  6.9s
+Test Summary:                                   | Pass  Total   Time
+> Pre-multiply with the inverse of mixed matrix |   17     17  18.8s
+Test Summary:                                 | Pass  Total  Time
+> Multiplication mixed matrix by mixed vector |    7      7  2.9s
+Test Summary:                                             | Pass  Total  Time
+> Multiplication, transposed mixed matrix by mixed vector |    4      4  2.4s
+Test Summary:                             | Pass  Total   Time
+> Beam stiffness and flexibility matrices |    9      9  11.0s

@@ -1,0 +1,9 @@
+2022-09-21 test_003.jl
+Test Summary:                 | Pass  Total   Time
+Initial checks ArrayPartition |    3      3  10.0s
+Test Summary:       | Pass  Total     Time
+With ArrayPartition |    5      5  1m09.4s
+Test Summary:       | Pass  Total  Time
+zero ArrayPartition |    4      4  0.3s
+Test Summary:                   | Pass  Total     Time
+ArrayPartition with mixed units |   28     28  4m01.8s

@@ -1,0 +1,9 @@
+2022-09-21 test_030.jl
+Test Summary:      | Pass  Total  Time
+Utilities, NLsolve |    7      7  3.3s
+Test Summary:                      | Pass  Total  Time
+Newton trust region solve, Vectors |    6      6  8.7s
+Test Summary:                             | Pass  Total  Time
+Newton trust region solve, ArrayPartition |    6      6  9.0s
+Test Summary:                                         | Pass  Total   Time
+Newton trust region cache, ArrayPartition dimensional |    7      7  12.3s

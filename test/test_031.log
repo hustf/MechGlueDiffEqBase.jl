@@ -1,0 +1,7 @@
+2022-09-21 test_031.jl
+Test Summary:                           | Pass  Total  Time
+OnceDifferentiable values, vector types |   13     13  5.7s
+Test Summary:                                                      | Pass  Total   Time
+OnceDifferentiable values, mutable ArrayParitition, nondimensional |   13     13  16.3s
+Test Summary:                                                   | Pass  Total   Time
+OnceDifferentiable values, mutable ArrayParitition, dimensional |   16     16  27.4s

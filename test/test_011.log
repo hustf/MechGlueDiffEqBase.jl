@@ -1,0 +1,5 @@
+2022-09-21 test_011.jl
+Test Summary:                                         | Pass  Total  Time
+Extended UNITLESS_ABS2, selected argument structures  |   26     26  6.4s
+Test Summary:                                            | Pass  Total  Time
+Extended ODE_DEFAULT_NORM, selected argument structures  |   26     26  1.1s

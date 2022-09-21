@@ -1,0 +1,3 @@
+2022-09-21 test_005.jl
+Test Summary:                                 | Pass  Total  Time
+Matrix-like argument (not recommended) diffeq |    1      1  6.8s

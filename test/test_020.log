@@ -1,0 +1,7 @@
+2022-09-21 test_020.jl
+Test Summary:                              | Pass  Total  Time
+ϵ for finite differentiation of quantities |    6      6  0.2s
+Test Summary:                              | Pass  Total  Time
+Univariate finite derivative of quantities |    1      1  0.1s
+Test Summary:                            | Pass  Total  Time
+Derivative single point f : R -> R tests |    6      6  0.3s

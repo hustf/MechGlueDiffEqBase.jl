@@ -2,6 +2,9 @@
 # Jacobian prototypes
 #####################
 
+# TODO: Don't dispatch on quantity. Dispatch on ArrayPartition if necessary.
+
+#=
 """
     jacobian_prototype_zero(x, vecfx)
 -> type-stable, mutable Jacobian container prototype.
@@ -13,10 +16,10 @@ is intended to help the compiler making efficient machine code by foretelling
 units, and can be used as if it was an ordinary Matrix{Any}.
 """
 jacobian_prototype_zero(x, vecfx) = zero.(jacobian_prototype_nan(x, vecfx))
+=#
 
 
-
-
+#=
 """
     jacobian_prototype_nan(x, vecfx)
 -> type-stable, mutable Jacobian container prototype.
@@ -37,6 +40,7 @@ function jacobian_prototype_nan(x::ArrayPartition, vecfx::ArrayPartition)
     @assert vecfx.x isa NTuple{N, Q}
     map(genrow, vecfx)
 end
+=#
 function jacobian_prototype_nan(x::RW(N), vecfx::RW(N)) where N
     # Mutable input
     typednan = (xel, fxel) -> NaN * (fxel / xel)
@@ -44,41 +48,48 @@ function jacobian_prototype_nan(x::RW(N), vecfx::RW(N)) where N
     Jint = map(genrow, vecfx)
     ArrayPartition(Jint...)
 end
-function jacobian_prototype_nan(x::RW(N), vecfx::ArrayPartition) where N
-    # Mutable x, immutable f(x)
-    typednan = (xel, fxel) -> NaN * (fxel / xel)
-    genrow(fxel) = map(xel -> typednan(xel, fxel) , x)
-    @assert length(vecfx) == N
-    @assert vecfx.x isa NTuple{N, Q} "Inconsistent vecfx = f(x), must be mutable or not"
-    map(genrow, vecfx)
-end
-function jacobian_prototype_nan(x::ArrayPartition, vecfx::RW(N)) where N
-    # Immutable x, mutable f(x)
-    typednan = (xel, fxel) -> [NaN * (fxel / xel)]
-    genrow(fxel) = map(xel -> typednan(xel, fxel) , x)
-    @assert length(x) == N
-    @assert x.x isa NTuple{N, Q} "Inconsistent x.x, must be mutable or not"
-    jprot = ArrayPartition(NTuple{N}(map(genrow, vecfx)))
-    @debug "" jprot
-    @assert genrow(vecfx[1]) isa RW(N)
-    @assert genrow(vecfx[2]) isa RW(N)
-    jprot
-end
-function jacobian_prototype_nan(x::E, vecfx::Vector{<:Q})
-    N = length(vecfx)
-    @assert length(x) == N
+#function jacobian_prototype_nan(x::RW(N), vecfx::ArrayPartition) where N
+#    # Mutable x, immutable f(x)
+#    typednan = (xel, fxel) -> NaN * (fxel / xel)
+#    genrow(fxel) = map(xel -> typednan(xel, fxel) , x)
+#    @assert length(vecfx) == N
+#    @assert vecfx.x isa NTuple{N, Q} "Inconsistent vecfx = f(x), must be mutable or not"
+#    map(genrow, vecfx)
+#end
+#function jacobian_prototype_nan(x::ArrayPartition, vecfx::RW(N)) where N
+#    # Immutable x, mutable f(x)
+#    typednan = (xel, fxel) -> [NaN * (fxel / xel)]
+#    genrow(fxel) = map(xel -> typednan(xel, fxel) , x)
+#    @assert length(x) == N
+#    @assert x.x isa NTuple{N, Q} "Inconsistent x.x, must be mutable or not"
+#    jprot = ArrayPartition(NTuple{N}(map(genrow, vecfx)))
+#    @debug "" jprot
+#    @assert genrow(vecfx[1]) isa RW(N)
+#    @assert genrow(vecfx[2]) isa RW(N)
+#    jprot
+#end
+#function jacobian_prototype_nan(x::E, vecfx::Vector{<:Q})
+#    N = length(vecfx)
+#    @assert length(x) == N
     # Immutable x, mutable vector f(x) with at least one element in x or vecfx with
     # physical dimension, none of which are ArrayPartitions.
     # Such differential equations are workable, easier to formulate, though perhaps
     # are not inferrable.
-    jacobian_prototype_nan(ArrayPartition(x...), ArrayPartition(vecfx...))
-end
+#    jacobian_prototype_nan(ArrayPartition(x...), ArrayPartition(vecfx...))
+#end
+
+
+###########
+# Dead code
+###########
+
 
 # We avoid overloading type generators as far as possible,
 # but this seems necessary in order to target
 # NLSolverBase/src/oncedifferentiable.jl/OnceDifferentiable:94
 # j_finitediff_cache = FiniteDiff.JacobianCache(copy(x_seed), copy(F), copy(F), fdtype)
 # Extending FiniteDiff/src/jacobians.jl:68, the difference is
+#=
 function JacobianCache(
     x1::ArrayPartition{T},
     fx::ArrayPartition{<:AbstractQuantity, Tuple} ,
@@ -117,3 +128,4 @@ function JacobianCache(
     end
     JacobianCache{typeof(_x1),typeof(_fx),typeof(fx1),typeof(colorvec),typeof(sparsity),fdtype,returntype}(_x1,_fx,fx1,colorvec,sparsity)
 end
+=#

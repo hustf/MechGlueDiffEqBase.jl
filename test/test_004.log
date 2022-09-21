@@ -1,0 +1,15 @@
+2022-09-21 test_004.jl
+Test Summary:                                 | Pass  Total  Time
+Non-inferrable immutable ArrayPartition units |    2      2  0.2s
+Test Summary:                            | Pass  Total  Time
+Inferrable zero immutable ArrayPartition |    1      1  0.0s
+Test Summary:                                       | Pass  Total  Time
+Inferrable zero immutable ArrayPartition with units |    6      6  0.3s
+Test Summary:                                       | Pass  Total  Time
+Non-inferrable immutable ArrayPartition mixed units |    3      3  0.1s
+Test Summary:                                       | Pass  Total  Time
+Inferrable similar, drop unit as expected in algos. |    5      5  0.3s
+Test Summary:                                        | Pass  Total  Time
+Inferrable UNITLESS_ABS2  ArrayPartition mixed units |    3      3  0.3s
+Test Summary:                                           | Pass  Total  Time
+Inferrable ODE_DEFAULT_NORM  ArrayPartition mixed units |    3      3  0.0s

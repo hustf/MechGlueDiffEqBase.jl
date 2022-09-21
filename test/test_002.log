@@ -1,0 +1,9 @@
+2022-09-21 test_002.jl
+Test Summary:                    | Pass  Total  Time
+Unitful time with unitless state |    3      3  4.6s
+Test Summary: | Pass  Total   Time
+Scalar units  |   24     24  58.0s
+Test Summary: |   Time
+2D units      | None  1m11.4s
+Test Summary:          | Pass  Total  Time
+Without ArrayPartition |    1      1  6.3s

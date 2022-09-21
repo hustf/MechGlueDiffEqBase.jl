@@ -1,0 +1,7 @@
+2022-09-21 test_021.jl
+Test Summary:                       | Pass  Total  Time
+Jacobian, allocating, Static Vector |    2      2  0.6s
+Test Summary:                | Pass  Total  Time
+Jacobian, allocating, vector |    2      2  0.5s
+Test Summary:                                | Pass  Total  Time
+Jacobian, allocating, mutable ArrayPartition |    2      2  0.9s
