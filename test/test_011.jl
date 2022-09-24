@@ -40,10 +40,10 @@ using BenchmarkTools # temp
                 v isa ArrayPartition{<:Real} ||
                 v isa Matrix{Int64} ||
                 v isa Matrix{Quantity{Int64}}
-                    #println("inferred ", typeof(v) )
-                    #println(v)
-                    @test @inferred(UNITLESS_ABS2(v)) isa Real
-                    #println()
+                #println("inferred ", typeof(v) )
+                #println(v)
+                @test @inferred(UNITLESS_ABS2(v)) isa Real
+                #println()
             else
                 #println("v = ", v)
                 #println(typeof(v), "\t\t", Base.return_types(UNITLESS_ABS2, (typeof(v),))[1])

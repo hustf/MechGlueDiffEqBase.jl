@@ -13,14 +13,14 @@ import RecursiveArrayTools.unpack
 using RecursiveArrayTools: ArrayPartitionStyle, npartitions, unpack_args
 import OrdinaryDiffEq
 import OrdinaryDiffEq.FiniteDiff: compute_epsilon, finite_difference_derivative
-import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache
+import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, finite_difference_jacobian!, JacobianCache
 using OrdinaryDiffEq.FiniteDiff: default_relstep, fdtype_error
 import Base: show, summary, print, setindex, size, ndims
 import Base: \, IndexStyle, axes, BroadcastStyle, Broadcast.combine_styles, copy
 using Base: array_summary, throw_boundserror, broadcasted
 using OrdinaryDiffEq.FiniteDiff: _vec
 using Printf
-import OrdinaryDiffEq.ArrayInterface
+import ArrayInterfaceCore
 import NLSolversBase
 import NLSolversBase: alloc_DF, OnceDifferentiable, NonDifferentiable, x_of_nans
 using NLSolversBase: f!_from_f, df!_from_df, fdf!_from_fdf, value_jacobian!!, AbstractObjective
@@ -32,7 +32,8 @@ using LinearAlgebra: require_one_based_indexing, istril, istriu, lu, wrapperop, 
 import LinearAlgebra: mul!, *
 using LinearAlgebra: Diagonal, LowerTriangular, UpperTriangular, AdjOrTransAbsVec, Transpose
 using LinearAlgebra: generic_matvecmul!
-export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantity
+export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantity, FreeUnits
+export @import_expand, ∙
 export norm , ArrayPartition, similar, zero, compute_epsilon
 export jacobian_prototype_zero, jacobian_prototype_nan
 export finite_difference_derivative, finite_difference_jacobian, show, summary, print
@@ -41,6 +42,7 @@ export numtype, alloc_DF, mixed_array_trait, convert_to_mixed
 export MatSqMut, VecMut, NotMixed, NotMixed, Single, Empty
 export is_square_matrix_mutable, is_vector_mutable_stable
 export OnceDifferentiable, DIMENSIONAL_NLSOLVE, check_isfinite
+
 
 # TODO: wash list, 'using' over 'import'
 

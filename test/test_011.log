@@ -1,5 +1,14 @@
-2022-09-21 test_011.jl
+2022-09-24 test_011.jl
 Test Summary:                                         | Pass  Total  Time
-Extended UNITLESS_ABS2, selected argument structures  |   26     26  6.4s
+Extended UNITLESS_ABS2, selected argument structures  |   26     26  6.3s
 Test Summary:                                            | Pass  Total  Time
-Extended ODE_DEFAULT_NORM, selected argument structures  |   26     26  1.1s
+Extended ODE_DEFAULT_NORM, selected argument structures  |   26     26  1.2s
+Test Summary:                                         | Pass  Total  Time
+Extended UNITLESS_ABS2, selected argument structures  |   26     26  0.0s
+Test Summary:                                            | Pass  Total  Time
+Extended ODE_DEFAULT_NORM, selected argument structures  |   26     26  0.0s
+
+@timed stats:
+(value = nothing, time = 8.3421906, bytes = 1308997600, gctime = 0.2570857, gcstats = Base.GC_Diff(1308997600, 77, 0, 32542375, 5327, 118, 257085700, 4, 0))
+@timed stats next run:
+(value = nothing, time = 0.3874254, bytes = 16335088, gctime = 0.0, gcstats = Base.GC_Diff(16335088, 0, 0, 295985, 199, 0, 0, 0, 0))

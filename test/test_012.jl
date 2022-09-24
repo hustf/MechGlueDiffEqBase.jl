@@ -33,7 +33,6 @@ end
     # Reference
     Am = convert_to_mixed([1 1; -1 1])
     Ai =  [0.5 -0.5; 0.5 0.5]
-    # WAS @test inv(Am)≈Ai
     @test all(isapprox.(inv(Am),Ai, rtol = 1e-6))
     @test @inferred(ArrayPartition{<:Number}, inv(Am)) == Ai
     # Consistent unit over elements
@@ -114,35 +113,9 @@ end
 #############################################
 # Multiplication mixed matrix by mixed vector
 #############################################
-@testset "> Multiplication mixed matrix by mixed vector" begin
+@testset "Multiplication" begin
     A3 = [1 2 3; 4 5 6; 7 8 0]
     b3 = [1, 20, 300]
-    c3 = [NaN, NaN, NaN]
-    @test A3 * b3 == [1*1  + 2*20 + 3*300, 1904, 167]
-    @test mul!(c3, A3, b3) == [941, 1904, 167] # Float64 on left, though, as NaN{Float64}
-    c3 = [NaN, NaN, NaN]
-    A3m = convert_to_mixed(A3)
-    b3m = convert_to_mixed(b3)
-    c3m = convert_to_mixed(c3)
-    @test mul!(c3m, A3m, b3m) == [941, 1904, 167]
-    @test A3m * b3m == [941, 1904, 167]
-    A3u = [1kg 2kg∙cm 3s; 4s 5cm∙s 6s²∙kg⁻¹; 7cm⁻¹ 8 0s∙kg⁻¹∙cm⁻¹]
-    b3u = [1cm, 20, 300kg∙cm∙s⁻¹]
-    c3u = [1kg∙cm, 2s∙cm,3]
-    A3mu = convert_to_mixed(A3u)
-    b3mu = convert_to_mixed(b3u)
-    c3mu = convert_to_mixed(c3u)
-    @test mul!(c3mu, A3mu, b3mu) == [941kg∙cm, 1904cm∙s, 167]
-    @test A3u * b3u == [941kg∙cm, 1904cm∙s, 167]
-    @test A3mu * b3mu == [941kg∙cm, 1904cm∙s, 167]
-end
-#########################################################
-# Multiplication, transposed mixed matrix by mixed vector
-#########################################################
-@testset "> Multiplication, transposed mixed matrix by mixed vector" begin
-    A3 = [1 2 3; 4 5 6; 7 8 0]
-    b3 = [1, 20, 300]
-    c3 = [NaN, NaN, NaN]
     c3 = [NaN, NaN, NaN]
     A3m = convert_to_mixed(A3)
     b3m = convert_to_mixed(b3)
@@ -153,17 +126,50 @@ end
     A3mu = convert_to_mixed(A3u)
     b3mu = convert_to_mixed(b3u)
     c3mu = convert_to_mixed(c3u)
-    @test_throws DimensionError transpose(A3u) * b3u
-    @test_throws DimensionMismatch transpose(A3mu) * b3mu
-    tA3mu = transpose(A3mu)
-    d3 = convert_to_mixed([1cm, 20kg∙cm∙s⁻¹, 300kg∙cm²])
-    e3 = convert_to_mixed([NaN∙kg∙cm, NaN∙kg∙cm², NaN∙s∙cm])
-    @test mul!(e3, tA3mu, d3) == [2181.0kg∙cm, 2502.0kg∙cm², 123.0cm∙s]
-    @test convert_to_array(tA3mu) * convert_to_array(d3) == [2181.0kg∙cm, 2502.0kg∙cm², 123.0cm∙s]
+    @testset "> Multiplication mixed matrix by mixed vector" begin
+        @test A3 * b3 == [1*1  + 2*20 + 3*300, 1904, 167]
+        @test mul!(c3, A3, b3) == [941, 1904, 167] # Float64 on left, though, as NaN{Float64}
+        c3 = [NaN, NaN, NaN]
+        @test mul!(c3m, A3m, b3m) == [941, 1904, 167]
+        c3m = convert_to_mixed(c3)
+        @test A3m * b3m == [941, 1904, 167]
+        @test mul!(c3mu, A3mu, b3mu) == [941kg∙cm, 1904cm∙s, 167]
+        c3mu = convert_to_mixed(c3u)
+        @test A3u * b3u == [941kg∙cm, 1904cm∙s, 167]
+        @test A3mu * b3mu == [941kg∙cm, 1904cm∙s, 167]
+    end
+    #########################################################
+    # Multiplication, transposed mixed matrix by mixed vector
+    #########################################################
+    @testset "> Multiplication, transposed mixed matrix by mixed vector" begin
+        @test_throws DimensionError transpose(A3u) * b3u
+        @test_throws DimensionMismatch transpose(A3mu) * b3mu
+        tA3mu = transpose(A3mu)
+        d3 = convert_to_mixed([1cm, 20kg∙cm∙s⁻¹, 300kg∙cm²])
+        e3 = convert_to_mixed([NaN∙kg∙cm, NaN∙kg∙cm², NaN∙s∙cm])
+        @test mul!(e3, tA3mu, d3) == [2181.0kg∙cm, 2502.0kg∙cm², 123.0cm∙s]
+        @test convert_to_array(tA3mu) * convert_to_array(d3) == [2181.0kg∙cm, 2502.0kg∙cm², 123.0cm∙s]
+    end
+    @testset "> Informative error message" begin
+        fpth, io = mktemp(tempdir(); cleanup=true)
+        redirect_stdio(stderr = io) do
+            try
+                A3mu * c3mu
+            catch
+            end
+        end
+        close(io)
+        msg = readlines(fpth)
+        @test msg[1] == "┌ Warning: mul! DimensionError hint"
+        @test msg[2] == "│   (i, j) = (1, 2)"
+        @test msg[3] == "│   A[i, j] = 2kg∙cm"
+        @test msg[4] == "│   B[j] = 2cm∙s"
+        @test msg[5] == "│   A[i, j] * B[j] = 4kg∙cm²∙s"
+        @test msg[6] == "│   C[i] = 1kg²∙cm"
+        @test msg[7] == "│   oneunit(C[i]) / oneunit(A[i, j]) = 1.0kg"
+        @test msg[8] == "│   oneunit(C[i]) / oneunit(B[j]) = 1.0kg²∙s⁻¹"
+    end
 end
-
-
-
 
 @testset "> Beam stiffness and flexibility matrices" begin
     # Beam with six degrees of freedom (2d, shear modes excluded)
@@ -205,8 +211,8 @@ end
     @test S[2] == 200kN
     # Let's go the other way and re-calculate deformations from forces:
     @test all(NoUnits.(Cᵣ * S) .≈ υ)
-    #test premul_inv
     @test all(NoUnits.(Kᵣ \ S) .≈ υ)
 end
+
 
 nothing

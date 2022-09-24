@@ -1,6 +1,7 @@
 # Concerning mutable fixed-length mixed arrays.
 # This extends RecursiveArrayTools.jl and
 # may fit more naturally in a separate glue package or as PRs.
+#
 using Test
 using MechGlueDiffEqBase
 using MechanicalUnits: @import_expand, ∙
@@ -11,8 +12,9 @@ import MechGlueDiffEqBase.RecursiveArrayTools
 using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle, unpack, ArrayPartition
 import LinearAlgebra
 @import_expand(cm, kg, s)
+
 #############################################
-# A Mutable fixed-length mixed arrays.
+# A Mutable fixed-length mixed array.
 # We want these to be inferrable,
 # which the standard matrix type, e.g.
 #     Any[1 2kg; 3 4]
@@ -20,6 +22,7 @@ import LinearAlgebra
 # as nested ArrayPartitions. For mutability,
 # the innermost type is a one-element vector.
 #############################################
+
 @testset "A Mutable fixed-length mixed arrays - direct construction and printing" begin
     # n:dimensionless d: dimension, M: Matrix, V: Vector, E: empty, 0-3: size, i: immutable
     E = ArrayPartition()
@@ -116,6 +119,7 @@ import LinearAlgebra
     @test repr(:"text/plain", Mn3x2, context = :color=>true) == "(\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6))"
     @test replace(sprint(io -> print(IOContext(io, :color => true), Mn3x2)), "RecursiveArrayTools." => "") == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}((\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6)))"
     @test repr(Vn1, context = :color=>true) == "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
+    @test sprint(io -> print(IOContext(io, :color => true), Vn1)) == "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
     @test repr(:"text/plain", Vn1, context = :color=>true) == "Single-element (discouraged) ArrayPartition(ArrayPartition(Vector{<:Number})):\n 1.0"
     @test repr(Vu3, context = :color=>true) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
     @test repr(:"text/plain", Vu3, context = :color=>true) == "3-element mutable ArrayPartition:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n                3.0"
@@ -134,6 +138,7 @@ import LinearAlgebra
     @test @inferred(transpose(Vn1)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Vu3)) isa LinearAlgebra.Transpose
 end
+
 @testset "A Mutable fixed-length mixed arrays - Inferred broadcast and mapping" begin
      # Inferred broadcast of mixed matrices, also mapping.
     # n:dimensionless d: dimension, M: Matrix, V: Vector, E: empty, 0-3: size, i: immutable,
@@ -145,7 +150,7 @@ end
     Vu3 = convert_to_mixed(Vu3a)
     Mu1 = ArrayPartition(ArrayPartition([1kg]))
     Mn2 = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]))
-    Mu2a = [1kg 2; 3 4cm]
+    Mu2a = convert_to_array([1kg 2; 3 4cm])
     Mu2 = convert_to_mixed(Mu2a)
     M2a = convert_to_array(Mn2)
     Mu3 = ArrayPartition(ArrayPartition([1]kg, [2]s, [3]kg), ArrayPartition([4]s, [5]kg, [6]s), ArrayPartition([7]kg, [8]s, [9]kg*s))
@@ -268,7 +273,6 @@ end
     @test is_square_matrix_mutable(@inferred( Mu2 .* 2 ))
     @test is_square_matrix_mutable(@inferred( Mu2 .* Mu2))
     @test_throws ErrorException @inferred( Mu2 .^ 2)
-    #
     # Zip with same order, when pairs of mixed matrix and normal matrix are zipped.
     # As a consequence of zipping to common ordering, we can compare matrices of
     # the mixed and normal types with an == sign.

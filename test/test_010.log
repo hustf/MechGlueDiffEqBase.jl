@@ -1,9 +1,22 @@
-2022-09-21 test_010.jl
+2022-09-24 test_010.jl
 Test Summary:                                                          | Pass  Total  Time
-A Mutable fixed-length mixed arrays - direct construction and printing |   90     90  5.9s
+A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  5.3s
 Test Summary:                                                        | Pass  Total   Time
-A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  18.2s
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  16.7s
 Test Summary:                                                                  | Pass  Total  Time
 B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |    6      6  0.2s
 Test Summary:                                                                             | Pass  Total  Time
-C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  2.1s
+C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  1.9s
+Test Summary:                                                          | Pass  Total  Time
+A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  0.1s
+Test Summary:                                                        | Pass  Total  Time
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  6.7s
+Test Summary:                                                                  | Pass  Total  Time
+B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |    6      6  0.0s
+Test Summary:                                                                             | Pass  Total  Time
+C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  0.0s
+
+@timed stats:
+(value = nothing, time = 24.9828372, bytes = 4092896718, gctime = 0.7891813, gcstats = Base.GC_Diff(4092896718, 71, 0, 65436224, 28667, 813, 789181300, 12, 0))
+@timed stats next run:
+(value = nothing, time = 7.5451339, bytes = 1271124198, gctime = 0.2451376, gcstats = Base.GC_Diff(1271124198, 36, 0, 17629267, 11225, 135, 245137600, 4, 0))

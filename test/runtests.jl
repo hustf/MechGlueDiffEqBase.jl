@@ -8,7 +8,7 @@ test_dir_path = @__DIR__
 filenumber(s) = parse(Int, join(filter!.(isdigit, collect.(s))))
 function test_one_file(test_file_name)
     output_log_name = replace(test_file_name,".jl" => ".log")
-    if isfile(output_log_name)
+    if isfile(joinpath(test_dir_path, output_log_name))
         printstyled(output_log_name, " exists.\n"; color = 176)
         @test true
     else
@@ -16,13 +16,16 @@ function test_one_file(test_file_name)
         # Run each sample script in a separate module to avoid pollution
         s   = Symbol(test_file_name)
         mod = @eval(Main, module $s end)
-        @time test_file_name @eval mod include($(joinpath(test_dir_path, test_file_name)))
+        # @time test_file_name @eval mod include($(joinpath(test_dir_path, test_file_name)))
+        stats = @timed @eval mod include($(joinpath(test_dir_path, test_file_name)))
+        statsnext = @timed @eval mod include($(joinpath(test_dir_path, test_file_name)))
+        #include($(joinpath(test_dir_path, test_file_name)))
         ts = Test.get_testset()
         if length(ts.results) > 0
             println("\nTest results in ", output_log_name)
         end
         output_log_name = replace(test_file_name,".jl" => ".log")
-        open(output_log_name, "w") do io
+        open(joinpath(test_dir_path, output_log_name), "w") do io
             println(io, Dates.today(), " ", test_file_name)
             if length(ts.results) > 0
                 for r in ts.results
@@ -31,6 +34,11 @@ function test_one_file(test_file_name)
                     end
                 end
             end
+            println(io)
+            println(io, "@timed stats:")
+            println(io, stats)
+            println(io, "@timed stats next run:")
+            println(io, statsnext)
         end
     end
 end
@@ -57,7 +65,7 @@ end
     end
 end
 
-@testset "Univariate differentiation (test_n, 19 < n < 30)" begin
+@testset "Finite differentiation (test_n, 19 < n < 30)" begin
     @testset "test: $test_file_name" for test_file_name in test_files
         if 19 < filenumber(test_file_name) < 30
             test_one_file(test_file_name)

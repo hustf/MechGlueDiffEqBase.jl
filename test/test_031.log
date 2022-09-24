@@ -1,7 +1,18 @@
-2022-09-21 test_031.jl
+2022-09-24 test_031.jl
 Test Summary:                           | Pass  Total  Time
-OnceDifferentiable values, vector types |   13     13  5.7s
+OnceDifferentiable values, vector types |   13     13  5.4s
 Test Summary:                                                      | Pass  Total   Time
-OnceDifferentiable values, mutable ArrayParitition, nondimensional |   13     13  16.3s
+OnceDifferentiable values, mutable ArrayParitition, nondimensional |   13     13  15.3s
 Test Summary:                                                   | Pass  Total   Time
-OnceDifferentiable values, mutable ArrayParitition, dimensional |   16     16  27.4s
+OnceDifferentiable values, mutable ArrayParitition, dimensional |   16     16  26.6s
+Test Summary:                           | Pass  Total  Time
+OnceDifferentiable values, vector types |   13     13  1.4s
+Test Summary:                                                      | Pass  Total  Time
+OnceDifferentiable values, mutable ArrayParitition, nondimensional |   13     13  6.5s
+Test Summary:                                                   | Pass  Total  Time
+OnceDifferentiable values, mutable ArrayParitition, dimensional |   16     16  5.4s
+
+@timed stats:
+(value = Test.DefaultTestSet("OnceDifferentiable values, mutable ArrayParitition, dimensional", Any[], 16, false, false, true, 1.664050799265e9, 1.664050825865e9), time = 47.3527994, bytes = 7262126694, gctime = 2.7109172, gcstats = Base.GC_Diff(7262126694, 2309, 39, 131776231, 93441, 3192, 2710917200, 18, 2))
+@timed stats next run:
+(value = Test.DefaultTestSet("OnceDifferentiable values, mutable ArrayParitition, dimensional", Any[], 16, false, false, true, 1.664050833901e9, 1.664050839342e9), time = 13.4771521, bytes = 1122740800, gctime = 0.2156339, gcstats = Base.GC_Diff(1122740800, 610, 0, 23518119, 18524, 666, 215633900, 3, 0))

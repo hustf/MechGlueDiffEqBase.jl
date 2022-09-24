@@ -52,7 +52,7 @@ function trust_region_(df::OnceDifferentiable,
     copyto!(cache.x, initial_x)
     value_jacobian!!(df, cache.x)
     cache.r .= NLsolve.value(df)
-    @debug "trust_region_:54 LenNTRCache evaluated at " string(initial_x) string(df.F) string(df.DF) string(cache.r) string(cache.d) Tx T maxlog = 2
+    @debug "trust_region_:55 LenNTRCache evaluated at " string(initial_x) string(df.F) string(df.DF) string(cache.r) string(cache.d) Tx T maxlog = 2
 
     NLsolve.check_isfinite(cache.r)
 
@@ -72,10 +72,18 @@ function trust_region_(df::OnceDifferentiable,
         if autoscale
             name *= " and autoscaling"
         end
-        return SolverResultsDimensional(name,
-            initial_x, copy(cache.x), norm(cache.r, Inf),
-            it, x_converged, xtol, f_converged, ftol, tr,
-            first(df.f_calls), first(df.df_calls))
+        return SolverResultsDimensional(name,     # method::String
+            initial_x,                            # initial_x::I
+            copy(cache.x),                        # zero::Z
+            maximum(x-> abs(ustrip(x)), cache.r), # residual_norm::rT
+            it,                                   # iterations::Int
+            x_converged,                          # x_converged::Bool
+            xtol,                                 # xtol::rT
+            f_converged,                          # f_converged::Bool
+            ftol,                                 # ftol::rT
+            tr,                                   # trace::SolverTrace
+            first(df.f_calls),                    # f_calls::Int
+            first(df.df_calls))                   # g_calls::Int  
     end
 
     tr = NLsolve.SolverTrace()
@@ -92,12 +100,11 @@ function trust_region_(df::OnceDifferentiable,
             end
         end
     else
-        throw("hardly yet")
+        throw("autoscale = false not implemented and tested yet")
         # oneunit.(ArrayPartition(4.338005808987156kg, 1.4s))
-
         fill!(cache.d, one(real(T)))
     end
-    @debug "trustregion_:100" string(cache.d) string(cache.x)
+    @debug "trustregion_:107" string(cache.d) string(cache.x)
     delta = factor * NLsolve.wnorm(cache.d ./ oneunit.(cache.d), cache.x ./ oneunit.(cache.x))
     @debug "trustregion_" it T delta
     if delta == zero(delta)
@@ -108,49 +115,38 @@ function trust_region_(df::OnceDifferentiable,
 
     while !stopped && !converged && it < iterations
         it += 1
-
-        @debug "trustregion_:115" it T delta string(cache.p) string(cache.p_c) string(cache.r) string(cache.d)
+        @debug "trustregion_:119" it T delta string(cache.p) string(cache.p_c) string(cache.r) string(cache.d)
         # Compute proposed iteration step
         dogleg_dimensional!(cache.p, cache.p_c, cache.pi, cache.r, cache.d, NLsolve.jacobian(df), delta)
         copyto!(cache.xold, cache.x)
         cache.x .+= cache.p .* unit.(cache.x)
-        @debug "trustregion_:117" it string(cache.x) maxlog = 10
+        @debug "trustregion_:123" it string(cache.x) maxlog = 10
 
         NLsolve.value!(df, cache.x)
-        @debug "trustregion_:120" string(cache.r_predict) string(NLsolve.jacobian(df)) string(cache.p) maxlog = 1
+        @debug "trustregion_:126" string(cache.r_predict) string(NLsolve.jacobian(df)) string(cache.p) maxlog = 1
         # Ratio of actual to predicted reduction (equation 11.47 in N&W)
-        #mul!(vec(cache.r_predict), NLsolve.jacobian(df), vec(cache.p))
         mul!(cache.r_predict, NLsolve.jacobian(df), cache.p .* unit.(cache.x))
-        @debug "trustregion_:124" string(cache.r_predict) string(cache.r)
+        @debug "trustregion_:129" string(cache.r_predict) string(cache.r)
         cache.r_predict .+= cache.r
-        @debug "trustregion_:126"  rho sum(UNITLESS_ABS2, cache.r) 
-        @debug "trustregion_:127"  sum(UNITLESS_ABS2, NLsolve.value(df))
-        @debug "trustregion_:128" sum(UNITLESS_ABS2, cache.r) 
-        @debug "trustregion_:129" sum(UNITLESS_ABS2, cache.r_predict)
-        @debug "trustregion_:130" (sum(UNITLESS_ABS2, cache.r) - sum(UNITLESS_ABS2, cache.r_predict))
-        @debug "trustregion_:131" (sum(UNITLESS_ABS2, cache.r) - sum(UNITLESS_ABS2, NLsolve.value(df)))
-        #rho = (sum(abs2, cache.r) - sum(abs2, NLsolve.value(df))) / (sum(abs2, cache.r) - sum(abs2, cache.r_predict))
         rho = (sum(UNITLESS_ABS2, cache.r) - sum(UNITLESS_ABS2, NLsolve.value(df))) / (sum(UNITLESS_ABS2, cache.r) - sum(UNITLESS_ABS2, cache.r_predict))
-        @debug "trustregion_:134" it T rho eta
+        @debug "trustregion_:132" it T rho eta
         if rho > eta
             # Successful iteration
-            @debug "trustregion_:137 success" 
+            @debug "trustregion_:135 success" 
             cache.r .= NLsolve.value(df)
-            @debug "trustregion_:139 update jacobian" 
+            @debug "trustregion_:137 update jacobian" 
             NLsolve.jacobian!(df, cache.x)
             @debug "trustregion_:139 update scaling " 
             # Update scaling vector
             if autoscale
                 for j = 1:nn
-                    #cache.d[j] = max(convert(real(T), 0.1) * real(cache.d[j]), norm(view(NLsolve.jacobian(df), :, j)))
-                    # cache.d[j] = norm(view(ustrip(J), :, j))
                     cache.d[j] = max(convert(real(T), 0.1) * real(cache.d[j]), ODE_DEFAULT_NORM(view(NLsolve.jacobian(df), :, j), 2))
-                    @debug "trustregion_:148 norm col $j " ODE_DEFAULT_NORM(view(NLsolve.jacobian(df), :, j), 0)
+                    @debug "trustregion_:144 norm col $j " ODE_DEFAULT_NORM(view(NLsolve.jacobian(df), :, j), 0)
                 end
             end
-            @debug "trustregion_:151"
+            @debug "trustregion_:147"
             x_converged, f_converged = assess_convergence(ustrip(cache.x), ustrip(cache.xold), ustrip(cache.r), xtol, ftol)
-            @debug "trustregion_:153"
+            @debug "trustregion_:149"
             converged = x_converged || f_converged
         else
             cache.x .-= cache.p
@@ -174,20 +170,6 @@ function trust_region_(df::OnceDifferentiable,
     if autoscale
         name *= " and autoscaling"
     end
-    @debug "trustregion_:177 method" name 
-    @debug "trustregion_:178 inital_x" string(ustrip.(initial_x))
-    @debug "trustregion_:179 zero" string(ustrip.(copy(cache.x)))
-    @debug "trustregion_:180" it
-    @debug "trustregion_:181" x_converged
-    @debug "trustregion_:182" xtol
-    @debug "trustregion_:183" f_converged
-    @debug "trustregion_:184" ftol
-    @debug "trustregion_:185" tr 
-
-    #
-
-    # TODO: create new type for results, implement `zero` and 'show'. Also check NLSolversBase for other methods.
-    #  rT<:Real,T<:Union{rT,Complex{rT}},I<:AbstractArray{T},Z<:AbstractArray{T}
     return SolverResultsDimensional(name,            # method::String
             initial_x,                            # initial_x::I
             copy(cache.x),                        # zero::Z
@@ -199,11 +181,7 @@ function trust_region_(df::OnceDifferentiable,
             ftol,                                 # ftol::rT
             tr,                                   # trace::SolverTrace
             first(df.f_calls),                    # f_calls::Int
-            first(df.df_calls))                   # g_calls::Int
-#            return SolverResults(name,
-#            initial_x, copy(cache.x), maximum(abs, cache.r),
-#            it, x_converged, xtol, f_converged, ftol, tr,
-#            first(df.f_calls), first(df.df_calls))     
+            first(df.df_calls))                   # g_calls::Int  
 end
 function trust_region(df::OnceDifferentiable,
     initial_x::RW(N),
@@ -216,7 +194,7 @@ function trust_region(df::OnceDifferentiable,
     factor::Real,
     autoscale::Bool) where N
     cache = LenNTRCache(df)
-    @debug "trust_region:187 LenNTRCache" xtol ftol string(initial_x) iterations factor N maxlog = 2
+    @debug "trust_region:197 LenNTRCache" xtol ftol string(initial_x) iterations factor N maxlog = 2
     trust_region_(df, initial_x, xtol, ftol, iterations, store_trace, show_trace, extended_trace,
         convert(numtype(xtol), factor), autoscale, cache)
 end
@@ -225,8 +203,8 @@ end
 function dogleg_dimensional!(p, p_c, p_i,
                  r, d, J, delta::Real)
     T = eltype(d)
-    @debug "dogleg_dimensional!:188" string(p) string(p_c) string(p_i) string(r) string(d) string(J) delta maxlog = 2
-    # TODO do this in-place. Propagate errors like commented below.
+    @debug "dogleg_dimensional!:206" string(p) string(p_c) string(p_i) string(r) string(d) string(J) delta maxlog = 2
+    # TODO do this in-place. Consider propagate errors like commented below.
     #try
         copyto!(p_i, ustrip.(J \ r))# Gauss-Newton step
     #catch e
@@ -241,9 +219,8 @@ function dogleg_dimensional!(p, p_c, p_i,
     #        throw(e)
     #    end
     #end
-    @debug "dogleg_dimensional!:204" string(p_i) T maxlog = 5
+    @debug "dogleg_dimensional!:222" string(p_i) T maxlog = 5
     NLsolve.rmul!(p_i, -one(T))
-#    NLsolve.rmul!(p_i, -one(T))
     # Test if Gauss-Newton step is within the region
     if NLsolve.wnorm(d, p_i) <= delta
         copyto!(p, p_i)   # accepts equation 4.13 from N&W for this step
@@ -254,15 +231,14 @@ function dogleg_dimensional!(p, p_c, p_i,
         # gradient
         # compute g = J'r ./ (d .^ 2)
         g = p
-        @debug "dogleg_dimensional!:258" string(g) string(J) string(r)
-        #mul!(vec(g), transpose(J), vec(r))
+        @debug "dogleg_dimensional!:234" string(g) string(J) string(r)
         g .= ustrip.(J \ r)
-        @debug "dogleg_dimensional!:261" string(g)
+        @debug "dogleg_dimensional!:236" string(g)
         g .= g ./ d.^2
-        @debug "dogleg_dimensional!:263" string(g) string(d)
+        @debug "dogleg_dimensional!:238" string(g) string(d)
         # compute Cauchy point
         p_c .= -NLsolve.wnorm(d, g)^2 / UNITLESS_ABS2(ustrip(J) * g) .* g
-        @debug "dogleg_dimensional!:266" string(p_c) delta NLsolve.wnorm(d, p_c)
+        @debug "dogleg_dimensional!:241" string(p_c) delta NLsolve.wnorm(d, p_c)
         if NLsolve.wnorm(d, p_c) >= delta
             # Cauchy point is out of the region, take the largest step along
             # gradient direction

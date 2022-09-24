@@ -1,9 +1,22 @@
-2022-09-21 test_002.jl
+2022-09-24 test_002.jl
 Test Summary:                    | Pass  Total  Time
-Unitful time with unitless state |    3      3  4.6s
+Unitful time with unitless state |    3      3  3.5s
 Test Summary: | Pass  Total   Time
-Scalar units  |   24     24  58.0s
-Test Summary: |   Time
-2D units      | None  1m11.4s
+Scalar units  |   24     24  27.8s
+Test Summary: | Time
+2D units      | None  56.0s
 Test Summary:          | Pass  Total  Time
-Without ArrayPartition |    1      1  6.3s
+Without ArrayPartition |    1      1  5.1s
+Test Summary:                    | Pass  Total  Time
+Unitful time with unitless state |    3      3  2.4s
+Test Summary: | Pass  Total   Time
+Scalar units  |   24     24  21.7s
+Test Summary: | Time
+2D units      | None  48.5s
+Test Summary:          | Pass  Total  Time
+Without ArrayPartition |    1      1  1.6s
+
+@timed stats:
+(value = Test.DefaultTestSet("Without ArrayPartition", Any[], 1, false, false, true, 1.664049993733e9, 1.664049998805e9), time = 92.8907882, bytes = 12919146269, gctime = 2.4523551, gcstats = Base.GC_Diff(12919146269, 927, 50, 189772731, 210666, 2276, 2452355100, 80, 0))
+@timed stats next run:
+(value = Test.DefaultTestSet("Without ArrayPartition", Any[], 1, false, false, true, 1.664050071477e9, 1.664050073104e9), time = 74.2989202, bytes = 8765602695, gctime = 1.55284, gcstats = Base.GC_Diff(8765602695, 787, 46, 132625324, 159737, 1910, 1552840000, 47, 0))

@@ -1,3 +1,10 @@
-2022-09-21 test_005.jl
+2022-09-24 test_005.jl
 Test Summary:                                 | Pass  Total  Time
-Matrix-like argument (not recommended) diffeq |    1      1  6.8s
+Matrix-like argument (not recommended) diffeq |    1      1  5.9s
+Test Summary:                                 | Pass  Total  Time
+Matrix-like argument (not recommended) diffeq |    1      1  2.0s
+
+@timed stats:
+(value = nothing, time = 6.0610255, bytes = 1002317403, gctime = 0.2300648, gcstats = Base.GC_Diff(1002317403, 171, 0, 19397473, 13793, 305, 230064800, 3, 0))
+@timed stats next run:
+(value = nothing, time = 2.1021277, bytes = 241853196, gctime = 0.0, gcstats = Base.GC_Diff(241853196, 105, 0, 4940385, 3274, 0, 0, 0, 0))

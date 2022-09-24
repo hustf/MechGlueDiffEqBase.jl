@@ -1,6 +1,6 @@
-###############################
-# Differentiation of quantities
-###############################
+######################################
+# Finite differentiation of quantities
+######################################
 
 # The function signature in OrdinaryDiffEq.FiniteDiff is restrictive. "Real" excludes complex numbers,
 # but that unfortunately excludes Quantity as well. A Quantity covering several types can be Real or Complex.
@@ -36,6 +36,11 @@ end
     @debug "compute_epsilon:38 complex quantity" x relstep absstep maxlog = 2
     eps(T1)∙oneunit(x)
 end
+######################################### 
+# Finite differentiation of mixed vectors 
+#########################################
+#@inline  compute_epsilon(val::Val, x, relstep, absstep::MixedCandidate, dir) = compute_epsilon(mixed_array_trait(absstep), val::Val, x, relstep, absstep::MixedCandidate, dir)
+#@inline  compute_epsilon(::VecMut, val, x, relstep, absstep, dir) = compute_epsilon.(val, x, relstep, absstep, dir)
 
 ##############################
 # (Updating) Jacobian matrices

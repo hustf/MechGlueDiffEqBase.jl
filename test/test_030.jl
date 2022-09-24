@@ -85,7 +85,6 @@ end
 #  ArrayPartition dimensional
 #############################
 @testset "Newton trust region cache, ArrayPartition dimensional" begin
-
     F = convert_to_mixed([10.0kg∙s³, 20.0s])
     # Evaluate implicitly at known zero
     f_2by2!(F, convert_to_mixed([0kg,1s]))
@@ -103,5 +102,13 @@ end
     @test isapprox(r.zero[1], 0kg, atol = 1e-12kg)
     @test isapprox(r.zero[2], 1s, rtol = 1e-12)
     @test r.iterations == 4
+    # Printing
+    msg = sprint(io -> print(IOContext(io, :color => true), r))
+    @test msg == "Results of dimensional Nonlinear Solver Algorithm\n * Algorithm: Trust-region with dogleg and autoscaling\n * Starting Point: convert_to_mixed(-0.5kg, 1.4s)\n * Zero: convert_to_mixed(-1.3383742606438585e-17kg, 1.0000000000000002s)\n * Inf-norm of residuals: 0.000000\n * Iterations: 4\n * Convergence: true\n   * |x - x'| < 0.0e+00: false\n   * |f(x)| < 1.0e-08: true\n * Function Calls (f): 10\n * Jacobian Calls (df/dx): 10"
+    # Solve with already converged solution
+    xsol = r.zero
+    r1 = nlsolve(df, xsol, method = :trust_region, autoscale = true)
+    @test r1.iterations == 0
+    @test_throws String nlsolve(df, convert_to_mixed([ -0.5∙kg; 1.4∙s]), method = :trust_region, autoscale = false)
 end
 nothing

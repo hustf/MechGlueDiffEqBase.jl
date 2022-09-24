@@ -1,7 +1,18 @@
-2022-09-21 test_001.jl
+2022-09-24 test_001.jl
 Test Summary: | Pass  Total  Time
-ODE           |    5      5  2.0s
+ODE           |    5      5  1.7s
 Test Summary: | Pass  Total  Time
-ODE quantity  |    5      5  5.2s
+ODE quantity  |    5      5  3.7s
 Test Summary:           | Pass  Total  Time
-ODE quantity algorithms |    5      5  1.2s
+ODE quantity algorithms |    5      5  0.7s
+Test Summary: | Pass  Total  Time
+ODE           |    5      5  0.7s
+Test Summary: | Pass  Total  Time
+ODE quantity  |    5      5  0.8s
+Test Summary:           | Pass  Total  Time
+ODE quantity algorithms |    5      5  0.7s
+
+@timed stats:
+(value = Test.DefaultTestSet("ODE quantity algorithms", Any[], 5, false, false, true, 1.664049901825e9, 1.664049902564e9), time = 25.9896316, bytes = 4226990151, gctime = 1.4203044, gcstats = Base.GC_Diff(4226990151, 1932, 1, 59001637, 17420, 498, 1420304400, 28, 4))
+@timed stats next run:
+(value = Test.DefaultTestSet("ODE quantity algorithms", Any[], 5, false, false, true, 1.664049904251e9, 1.664049904999e9), time = 2.4288693, bytes = 313077752, gctime = 0.0692208, gcstats = Base.GC_Diff(313077752, 4, 0, 5462029, 4006, 105, 69220800, 3, 0))

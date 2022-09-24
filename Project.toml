@@ -1,9 +1,10 @@
 name = "MechGlueDiffEqBase"
 uuid = "2532746b-52b5-4539-9431-8bb183ab067f"
 authors = ["hustf <hustf@users.noreply.github.com> and contributors"]
-version = "0.3.0"
+version = "0.4.0"
 
 [deps]
+ArrayInterfaceCore = "30b0a656-2188-435a-8636-2ec0e6a096e2"
 BoundaryValueDiffEq = "764a87c0-6b3e-53db-9096-fe964310641d"
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
 FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
@@ -17,13 +18,9 @@ RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 Unitfu = "5ee08b94-2369-4f4a-b8c7-99333ba35fb0"
 
 [compat]
-julia = "1"
+julia = "1.8"
 
 [extras]
-DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
-MechGlueDiffEqBase = "2532746b-52b5-4539-9431-8bb183ab067f"
-MechanicalUnits = "e6be9192-89dc-11e9-36e6-5dbcb28f419e"
-OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]

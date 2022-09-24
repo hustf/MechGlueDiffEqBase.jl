@@ -208,7 +208,6 @@ setindex!_of_transposed_mixed(::S, A, v, i, j) where {S<:Mixed } = throw_boundse
 # This is (likely) used by the fallback `show`` methods
 function _IndexStyle(::Type{<:AdjOrTransAbsVec{T,S} where {T, S <: MixedCandidate}})
     @debug "_IndexStyle"
-    throw("Unused?")
     IndexStyle_of_transposed_mixed(mixed_array_trait(A.parent))
 end
 IndexStyle_of_transposed_mixed(::MatSqMut) = IndexCartesian()
@@ -246,8 +245,6 @@ function print_as_mixed(io::IO, ::VecMut, v::RW(N)) where N
     buf = IOBuffer()
     ioc = IOContext(buf, IOContext(io).dict)
     col = get(ioc, :unitsymbolcolor, :cyan)
-    #printstyled(ioc, color = col, "$N-element mutable ")
-    #print(ioc, "ArrayPartition(")
     printstyled(ioc, color = col, "convert_to_mixed(")
     prefix = String(take!(buf))
     printstyled(ioc, color = col, ")")
