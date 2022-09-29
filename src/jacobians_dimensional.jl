@@ -2,36 +2,28 @@
 # Sets absstep to a vector with the same types as elements of x.
 # Constructs types of fx from J and x.
 # Constructs a JacobianCache.
+
 function finite_difference_jacobian!(J::MixedCandidate,
     f,
     x,
     fdtype::Val = Val(:forward),
     returntype = eltype(x),
     f_in       = nothing;
-    relstep = default_relstep(fdtype, eltype(x)),
-    absstep = relstep .* oneunit.(x), # A (mixed) vector
-    colorvec = 1:length(x),
-    sparsity = nothing)
+    relstep    = default_relstep(fdtype, eltype(x)),
+    absstep    = relstep .* oneunit.(x), # A (mixed) vector
+    colorvec   = 1:length(x),
+    sparsity   = nothing)
     #
     @assert is_square_matrix_mutable(J)
     @assert size(J)[2] == length(x)
     @assert size(absstep)[1] == size(x)[1]
     @assert !(fdtype isa Type)
-    @debug "finite_difference_jacobian!:20" fdtype returntype relstep repr(absstep) maxlog=2
+    @debug "finite_difference_jacobian!:21" fdtype returntype relstep repr(absstep) maxlog=2
     if f_in isa Nothing
         fx = J[:, 1] * oneunit(x[1]) # Get the types and dimension right
         @debug "finite_difference_jacobian!:23" string(x) string(fx) maxlog=2
-        f(fx, x)          # Get the values of fx right. Also checks if J is dimensionally correct.
-        if fdtype == Val(:complex) && returntype <: Quantity
-            # Quantities are not a subtype of Real. Fool the outside constructor:
-            _x = zero.(complex.(x))
-            _fx = zero.(complex.(fx))
-            c = JacobianCache(_x, _fx, fdtype, numtype(returntype))
-            # Copy through the inner constructor, now with modified returntype and numeric type
-            cache = JacobianCache{typeof(c.x1), typeof(c.x2), typeof(c.fx), typeof(c.fx1), typeof(c.colorvec), typeof(c.sparsity), fdtype, returntype}(c.x1, c.x2, c.fx, c.fx1, c.colorvec, c.sparsity)
-        else
-            cache = JacobianCache(x, fx, fdtype, returntype)
-        end
+        f(fx, x)     # Get the values right. Also checks if J is dimensionally correct.
+        cache = JacobianCache(x, fx, fdtype, returntype)
     else
         cache = JacobianCache(x, f_in, fdtype, returntype)
     end
@@ -141,14 +133,14 @@ function finite_difference_jacobian(f, x::MixedCandidate,
     #
     @assert is_vector_mutable_stable(x)
     @assert size(absstep)[1] == size(x)[1]
-    @debug "finite_difference_jacobian:135" string(x) fdtype returntype maxlog = 2
+    @debug "finite_difference_jacobian:136" string(x) fdtype returntype maxlog = 2
     if f_in isa Nothing
         fx = f(x)
     else
         fx = f_in
     end
     cache = JacobianCache(x, fx, fdtype, returntype)
-    @debug "finite_difference_jacobian:142" typeof(cache) maxlog = 2
+    @debug "finite_difference_jacobian:143" typeof(cache) maxlog = 2
     finite_difference_jacobian(f, x, cache, fx; relstep, absstep, colorvec, sparsity, jac_prototype, dir)
 end
 # Extends FiniteDiff\src\jacobians.jl:159.
@@ -168,10 +160,9 @@ function finite_difference_jacobian(
     #
     @assert is_vector_mutable_stable(absstep)
     @assert sparsity isa Nothing
-    @debug "finite_difference_jacobian:162" string(x) fdtype returntype string(absstep) f_in maxlog = 2
+    @debug "finite_difference_jacobian:163" string(x) fdtype returntype string(absstep) string(f_in) maxlog = 2
     x1, fx, fx1 = cache.x1, cache.fx, cache.fx1
     #
-    # Rest of function is re-used from earlier version...
     if !(f_in isa Nothing)
         vecfx = MechGlueDiffEqBase._vec(f_in)
     elseif fdtype == Val(:forward)
@@ -185,6 +176,11 @@ function finite_difference_jacobian(
     vecx1 = MechGlueDiffEqBase._vec(x1)
 
     J = jac_prototype isa Nothing ? jacobian_prototype_zero(x, vecfx)  : zero(jac_prototype)
+    @debug "finite_difference_jacobian:179" string(J) maxlog = 2
+
+
+    # Why not use an in-place from here?
+
 
     nrows = length(J.x)
     ncols = length(J.x[1])
@@ -251,21 +247,23 @@ function finite_difference_jacobian(
                 J = J + _make_Ji(J, eltype(x), dx, color_i, nrows, ncols)
             end
         end
-    elseif fdtype == Val(:complex) && returntype <: Real
+    elseif fdtype == Val(:complex) && numtype(returntype) <: Real
         function calculate_Ji_complex(i)
             _vecx = complex.(vecx)
             x_save = ArrayInterfaceCore.allowed_getindex(vecx, i)
             epsilon = compute_epsilon(Val(:complex), x_save, relstep, absstep[i], dir)
-            su = x_save + im * oneunit(x_save) * epsilon
-            @debug "calculate_Ji_complex"  vecfx epsilon i x_save x su  returntype _vecx
+            @debug "calculate_Ji_complex:255"  i x_save epsilon maxlog=10
+            su = x_save + im * epsilon
+            @debug "calculate_Ji_complex"  vecfx epsilon i x_save x su  returntype string(_vecx)
             setindex!(_vecx, su, i)
             _x = reshape(_vecx, axes(x))
             vecfx = MechGlueDiffEqBase._vec(f(_x))
-            @debug "calculate_Ji_complex"  repr(vecfx)
-            imag(vecfx) / (epsilon * oneunit(x_save))
+            @debug "calculate_Ji_complex:261"  repr(vecfx) repr(epsilon)
+            imag(vecfx) / epsilon
         end
 
         if jac_prototype isa Nothing
+
             Jvec = map(calculate_Ji_complex, 1:maximum(colorvec))
             #J = ArrayPartition(map(ArrayPartition, zip(Jvec...))...)
             for (j, column) in zip(1:ncols, Jvec)
@@ -282,6 +280,7 @@ function finite_difference_jacobian(
         end
     else
         @debug "finite_difference_jacobian:275" fdtype returntype maxlog = 1
+        @show fdtype typeof(fdtype)
         fdtype_error(fdtype)
     end
     J

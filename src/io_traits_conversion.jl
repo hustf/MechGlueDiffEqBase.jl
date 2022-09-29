@@ -88,7 +88,9 @@ function convert_to_mixed(A::AbstractArray)
 end
 convert_to_mixed(x::AbstractVector{T}) where T = convert_to_mixed(x...)
 convert_to_mixed(x::NTuple{N, U}) where {N, U} = ArrayPartition_from_single_element_vectors(vpack.(x))
-function convert_to_mixed(x::Vararg{<:Number})
+# Previously dispatched on: x::Vararg{<:Number}, 
+# which gives the deprecation warning:  Wrapping `Vararg` directly in UnionAll is deprecated (wrap the tuple instead).
+function convert_to_mixed(x::Number...)
     p = vpack.(x)
     if length(x) > 1
         ArrayPartition_from_single_element_vectors(convert.(E, p))

@@ -3,7 +3,7 @@
 using Test
 using MechGlueDiffEqBase
 using MechanicalUnits: @import_expand, dimension, NoDims, ∙
-import MechanicalUnits.Unitfu.numtype
+import MechanicalUnits.numtype
 @import_expand(km, N, s, m, km, kg, °, inch)
 using DiffEqBase, OrdinaryDiffEq
 

@@ -5,9 +5,10 @@
 using Test
 using MechGlueDiffEqBase # exports ArrayPartition
 using MechGlueDiffEqBase: determinant_dimension, determinant, mul!
-using MechanicalUnits: @import_expand, ∙, ustrip, unit, ᴸ², ᴹ³, ᵀ, NoDims, NoUnits
-import MechanicalUnits: Unitfu
-using MechanicalUnits.Unitfu: DimensionError
+import MechanicalUnits
+using MechanicalUnits: @import_expand, ∙, ustrip, unit, 𝐋², 𝐋⁴, 𝐌³, 𝐓, NoDims, NoUnits
+using MechanicalUnits: 𝐋, 𝐌, 𝐓
+using MechanicalUnits: DimensionError, Dimension, Dimensions
 import LinearAlgebra
 @import_expand(dam, cm, kg, s, GPa, mm, N, m, kN)
 
@@ -93,11 +94,11 @@ end
     zm = convert_to_mixed(z)
     k = convert_to_mixed(ka)
 
-    @test determinant_dimension(wm) == ᴸ²
-    @test determinant_dimension(xm) == Unitfu.Dimensions{(Unitfu.Dimension{Missing}(1//1),)}
-    @test determinant_dimension(ym) == ᴸ²
+    @test determinant_dimension(wm) == 𝐋²
+    @test determinant_dimension(xm) == Dimensions{(Dimension{Missing}(1//1),)}
+    @test determinant_dimension(ym) == 𝐋²
     @test determinant_dimension(zm) == NoDims
-    @test determinant_dimension(k) ==  ᴸ²∙ ᴹ³∙ ᵀ^-6
+    @test determinant_dimension(k) ==  𝐋²∙ 𝐌³∙ 𝐓^-6
 
     @test determinant(wm) == 9cm²
     @test_throws DimensionMismatch determinant(xm)
@@ -190,7 +191,8 @@ end
                 0kN/mm     -ky       kθy       0kN/mm     ky        kθy ;
                 0kN        -kθy      kθ        0kN        kθy       2∙kθ])
     # The system is dimensionally sound:
-    @test determinant_dimension(K) == Unitfu.ᴸ^4 * Unitfu.ᴹ^6 * Unitfu.ᵀ^-12
+    @test determinant_dimension(K) == 𝐋^4 * 𝐌^6 * 𝐓^-12
+    @test determinant_dimension(K) == 𝐋⁴∙𝐌^6 ∙𝐓^-12
     # With six degrees of freedom, the system is statically determinate. There's nothing interesting
     # to be found with these equations.
     @test determinant(K) == 0.0kN^6∙mm⁻²
@@ -205,9 +207,9 @@ end
     υ = convert_to_mixed([0.01, 1mm, 1mm])
     # Corresponding moment and force vector:
     S = Kᵣ* υ .|> kN
-    @test S[1] isa  Unitfu.Energy # A moment or torque has the dimensions of energy.
-    @test S[2] isa  Unitfu.Force
-    @test S[3] isa  Unitfu.Force
+    @test S[1] isa  MechanicalUnits.Unitfu.Energy # A moment or torque has the dimensions of energy. MechanicalUnits don't import the ambiguity.
+    @test S[2] isa  MechanicalUnits.Force
+    @test S[3] isa  MechanicalUnits.Force
     @test S[2] == 200kN
     # Let's go the other way and re-calculate deformations from forces:
     @test all(NoUnits.(Cᵣ * S) .≈ υ)

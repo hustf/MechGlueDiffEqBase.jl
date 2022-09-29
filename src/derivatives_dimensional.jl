@@ -17,23 +17,23 @@ end
 
 @inline function compute_epsilon(::Val{:forward}, x::T, relstep::Real, absstep::Quantity{T1, D, U},
     dir = nothing) where {T<:Number, T1<:Real, D, U}
-    @debug "compute_epsilon:21 forward quantity" T1 x relstep absstep maxlog = 2
+    @debug "compute_epsilon:20 forward quantity" T1 x relstep absstep maxlog = 2
     max(relstep * oneunit(absstep), absstep)
 end
 
 @inline function compute_epsilon(::Val{:forward}, x::Quantity{T1, D, U}, relstep::Real, absstep::Real, dir = nothing) where {T1<:Real, D, U}
-    @debug "compute_epsilon:26 forward quantity" T1 x relstep absstep maxlog = 2
+    @debug "compute_epsilon:25 forward quantity" T1 x relstep absstep maxlog = 2
     max(relstep*abs(x), absstep * oneunit(x))
 end
 
 @inline function compute_epsilon(::Val{:complex}, x::Quantity{T, D, U}, ::Union{Nothing,T1} = nothing,
     ::Union{Nothing,Quantity{T, D, U}} = nothing, dir = nothing) where {T1<:Real, T<:Real, D, U}
-    @debug "compute_epsilon:33 complex quantity" T x relstep absstep maxlog = 2
+    @debug "compute_epsilon:31 complex quantity" T x maxlog = 2
     eps(T)∙oneunit(x)
 end
 
 @inline function compute_epsilon(::Val{:complex}, x::Quantity{T1, D, U}, relstep::Real, absstep::Real, dir = nothing) where {T1<:Real, D, U}
-    @debug "compute_epsilon:38 complex quantity" x relstep absstep maxlog = 2
+    @debug "compute_epsilon:36 complex quantity" x maxlog = 2
     eps(T1)∙oneunit(x)
 end
 ######################################### 

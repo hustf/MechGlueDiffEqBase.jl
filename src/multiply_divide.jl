@@ -97,7 +97,7 @@ end
 function _inv_consistent(::MatSqMut, Q)
     require_one_based_indexing(Q)
     # Split off units, invert separately
-    Qn = convert_to_array(ustrip(Q))
+    Qn = convert_to_array(ustrip.(Q))
     Qu = 1 / oneunit(eltype(Q))
     convert_to_mixed(inv(Qn) * Qu)
 end

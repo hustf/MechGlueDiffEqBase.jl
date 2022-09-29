@@ -1,22 +1,22 @@
-2022-09-24 test_010.jl
+2022-09-29 test_010.jl
 Test Summary:                                                          | Pass  Total  Time
-A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  5.3s
+A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  5.8s
 Test Summary:                                                        | Pass  Total   Time
-A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  16.7s
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  14.9s
 Test Summary:                                                                  | Pass  Total  Time
 B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |    6      6  0.2s
 Test Summary:                                                                             | Pass  Total  Time
-C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  1.9s
+C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  1.6s
 Test Summary:                                                          | Pass  Total  Time
 A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  0.1s
 Test Summary:                                                        | Pass  Total  Time
-A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  6.7s
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  5.6s
 Test Summary:                                                                  | Pass  Total  Time
 B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |    6      6  0.0s
 Test Summary:                                                                             | Pass  Total  Time
 C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  0.0s
 
 @timed stats:
-(value = nothing, time = 24.9828372, bytes = 4092896718, gctime = 0.7891813, gcstats = Base.GC_Diff(4092896718, 71, 0, 65436224, 28667, 813, 789181300, 12, 0))
+(value = nothing, time = 38.4421657, bytes = 7305027339, gctime = 1.8740548, gcstats = Base.GC_Diff(7305027339, 1931, 0, 106458591, 41366, 1046, 1874054800, 55, 5))
 @timed stats next run:
-(value = nothing, time = 7.5451339, bytes = 1271124198, gctime = 0.2451376, gcstats = Base.GC_Diff(1271124198, 36, 0, 17629267, 11225, 135, 245137600, 4, 0))
+(value = nothing, time = 6.5236278, bytes = 1281587088, gctime = 0.2186598, gcstats = Base.GC_Diff(1281587088, 35, 0, 17754675, 11246, 150, 218659800, 10, 0))

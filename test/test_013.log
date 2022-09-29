@@ -1,10 +1,10 @@
-2022-09-24 test_013.jl
+2022-09-29 test_013.jl
+Test Summary:                        | Pass  Total   Time
+Mixed mutable vector argument diffeq |    1      1  15.2s
 Test Summary:                        | Pass  Total  Time
-Mixed mutable vector argument diffeq |    1      1  8.2s
-Test Summary:                        | Pass  Total  Time
-Mixed mutable vector argument diffeq |    1      1  3.3s
+Mixed mutable vector argument diffeq |    1      1  3.9s
 
 @timed stats:
-(value = nothing, time = 8.2375489, bytes = 985822846, gctime = 0.1872825, gcstats = Base.GC_Diff(985822846, 728, 0, 20992077, 11989, 580, 187282500, 2, 0))
+(value = nothing, time = 118.0830655, bytes = 6190526324, gctime = 1.9534543, gcstats = Base.GC_Diff(6190526324, 2671, 3, 99034032, 45964, 1297, 1953454300, 43, 5))
 @timed stats next run:
-(value = nothing, time = 3.3640747, bytes = 309657710, gctime = 0.0, gcstats = Base.GC_Diff(309657710, 253, 0, 6699825, 3649, 0, 0, 0, 0))
+(value = nothing, time = 3.9126733, bytes = 309279790, gctime = 0.0761968, gcstats = Base.GC_Diff(309279790, 253, 0, 6692476, 3649, 235, 76196800, 2, 0))

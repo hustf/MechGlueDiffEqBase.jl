@@ -198,21 +198,27 @@ end
         fdtype = Val{:complex}
         xa = rand(3) .* [kg, m, s]
         x = convert_to_mixed(xa)
+        fxa = copy(xa)
         fx = copy(x)
         @test_throws ErrorException JacobianCache(xa, fdtype)
-        @test_throws ErrorException JacobianCache(x, fdtype)
-        # Same temp structure as in 'finite_difference_jacobian'. We avoid making
-        # another outside constructor, (which may be necessary to do anyway).
-        returntype = eltype(x)
-        _x = zero.(complex.(x))
-        _fx = zero.(complex.(fx))
-        c = JacobianCache(_x, _fx, fdtype, numtype(returntype))
+        c = JacobianCache(x, fx, fdtype)
         @test c.x1 == zero.(complex.(x))
         @test c.x2 == zero.(complex.(x))
         @test c.fx == zero.(complex.(fx))
         @test c.fx1 isa Nothing
         @test paramsdic(c)[:fdtype] == Val(:complex)
-        @test paramsdic(c)[:returntype] == Float64 # Is changed to Quantity{Float64} by callee.
+        @test paramsdic(c)[:returntype] == Quantity{Float64}
+
+        returntype = eltype(x)
+        _x = zero.(complex.(x))
+        _fx = zero.(complex.(fx))
+        c1 = JacobianCache(_x, _fx, fdtype, numtype(returntype))
+        @test c1.x1 == zero.(complex.(x))
+        @test c1.x2 == zero.(complex.(x))
+        @test c1.fx == zero.(complex.(fx))
+        @test c1.fx1 isa Nothing
+        @test paramsdic(c1)[:fdtype] == Val(:complex)
+        @test paramsdic(c1)[:returntype] == Float64 
     end
 end
 
@@ -250,23 +256,23 @@ end
     @test F[1] == 18.0kg∙s³
     @test f(x)[1] == 18.0kg∙s³
     x = convert_to_mixed(0.0kg, 1.0s)
-    x_nd = ustrip(x)
+    x_nd = ustrip.(x)
     Jman_nd = ustrip.(Jman)
     for fdsymb in [:forward, :central, :complex]
         @testset "Allocating, $fdsymb" begin
             @testset "Jacobian, allocating, mutable ArrayPartition, $fdsymb" begin
                 foocalls = 0
-                J = finite_difference_jacobian(f, x)
+                J = finite_difference_jacobian(f, x, Val(fdsymb))
                 relerr = (J - Jman) ./ Jman
                 @test all(relerr .< 1e-6)
-                @test foocalls == 3
+                @test foocalls == (fdsymb == :central ? 5 : 3) 
             end
         end
         @testset "Mutating" begin
             @testset "Jacobian, mutating, mutable ArrayPartition, $fdsymb" begin
                 foocalls = 0
                 J = convert_to_mixed(Jman * 1.0NaN) # Fill with NaN values
-                finite_difference_jacobian!(J, f!, x, Val(fdsymb))
+                finite_difference_jacobian!(J, f!, x, Val(fdsymb)) 
                 relerr = (J - Jman) ./ Jman
                 @test all(relerr .< 1e-6)
                 @test foocalls == (fdsymb == :central ? 5 : 3) 
@@ -275,10 +281,10 @@ end
         @testset "Allocating dimensionless, $fdsymb" begin
             @testset "Jacobian, allocating, mutable ArrayPartition, $fdsymb" begin
                 foocalls = 0
-                J = finite_difference_jacobian(f_nd, x_nd)
+                J = finite_difference_jacobian(f_nd, x_nd,  Val(fdsymb))
                 relerr = (J - Jman_nd) ./ Jman_nd
                 @test all(relerr .< 1e-6)
-                @test foocalls == 3
+                @test foocalls == (fdsymb == :central ? 5 : 3) 
             end
         end
         @testset "Mutating dimensionless, $fdsymb" begin

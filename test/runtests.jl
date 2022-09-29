@@ -16,10 +16,8 @@ function test_one_file(test_file_name)
         # Run each sample script in a separate module to avoid pollution
         s   = Symbol(test_file_name)
         mod = @eval(Main, module $s end)
-        # @time test_file_name @eval mod include($(joinpath(test_dir_path, test_file_name)))
         stats = @timed @eval mod include($(joinpath(test_dir_path, test_file_name)))
         statsnext = @timed @eval mod include($(joinpath(test_dir_path, test_file_name)))
-        #include($(joinpath(test_dir_path, test_file_name)))
         ts = Test.get_testset()
         if length(ts.results) > 0
             println("\nTest results in ", output_log_name)

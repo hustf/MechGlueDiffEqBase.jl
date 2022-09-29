@@ -4,12 +4,11 @@
 #
 using Test
 using MechGlueDiffEqBase
-using MechanicalUnits: @import_expand, ∙
-using MechanicalUnits.Unitfu: DimensionError, Quantity, FreeUnits
-import Base: Broadcast
+import MechanicalUnits
+using MechanicalUnits: @import_expand, ∙, DimensionError
 using Base.Broadcast: BroadcastStyle, combine_styles, DefaultArrayStyle, Broadcasted
 import MechGlueDiffEqBase.RecursiveArrayTools
-using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle, unpack, ArrayPartition
+using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle, unpack
 import LinearAlgebra
 @import_expand(cm, kg, s)
 
@@ -96,42 +95,44 @@ import LinearAlgebra
     @test mixed_array_trait(typeof(Vn1)) == Single()
     @test mixed_array_trait(typeof(Vu3)) == VecMut()
     #
-    # Note on 'replace' below: when this test is evaluated as in 'runtests.jl', importing RecursiveArrayTools.ArrayPartition (and Unitfu.Freeunits? )sometimes fail.
-    @test replace(repr(E, context = :color=>true), "RecursiveArrayTools." => "") == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
-    @test repr(:"text/plain", E, context = :color=>true) == "()\"#undef\""
-    @test replace(sprint(io -> print(IOContext(io, :color => true), E)), "RecursiveArrayTools." => "") == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
-    @test repr(Mn1, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
-    @test replace(repr(:"text/plain", Mn1, context = :color=>true), "RecursiveArrayTools." => "") == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}}}}}:\n 1"
-    @test sprint(io -> print(IOContext(io, :color => true), Mn1)) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
-    @test repr(Mn2, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
-    @test replace(repr(:"text/plain", Mn2, context = :color=>true), "RecursiveArrayTools." => "") == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}:\n 1  2\n 3  4"
-    @test sprint(io -> print(IOContext(io, :color => true), Mn2)) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
-    @test replace(repr(Mu2, context = :color=>true), "RecursiveArrayTools." => "") == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
-    @test replace(repr(:"text/plain", Mu2, context = :color=>true), "RecursiveArrayTools." => "", "Unitfu." => "") ==
-        "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᵀ, FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}}}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m\n  3\e[36ms\e[39m  4\e[36mkg\e[39m"
-    @test sprint(io -> print(IOContext(io, :color => true), Mu2)) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
-    @test repr(Mn3, context = :color=>true) == "\e[36mconvert_to_mixed(\e[39m[1 2 3; 4 5 6; 7 8 9]\e[36m)\e[39m"
-    @test replace(repr(:"text/plain", Mn3, context = :color=>true), "RecursiveArrayTools." => "") == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}}}:\n 1  2  3\n 4  5  6\n 7  8  9"
-    @test repr(Mu3, context = :color=>true) =="\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
-    @test replace(repr(:"text/plain", Mu3, context = :color=>true), "RecursiveArrayTools." => "", "Unitfu." => "") == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᵀ, FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ, FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}}}, ArrayPartition{Quantity{Int64}, Tuple{Vector{Quantity{Int64,  ᴹ, FreeUnits{(\e[36mkg\e[39m,),  ᴹ, nothing}}}, Vector{Quantity{Int64,  ᵀ, FreeUnits{(\e[36ms\e[39m,),  ᵀ, nothing}}}, Vector{Quantity{Int64,  ᴹ∙ ᵀ, FreeUnits{(\e[36mkg\e[39m, \e[36ms\e[39m),  ᴹ∙ ᵀ, nothing}}}}}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m              3\e[36mkg\e[39m\n  4\e[36ms\e[39m  5\e[36mkg\e[39m               6\e[36ms\e[39m\n 7\e[36mkg\e[39m   8\e[36ms\e[39m  9\e[36mkg\e[39m∙\e[36ms\e[39m"
-    @test sprint(io -> print(IOContext(io, :color => true), Mu3)) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
-    @test replace(repr(Mn3x2, context = :color=>true), "RecursiveArrayTools." => "") == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}((\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6)))"
-    @test repr(:"text/plain", Mn3x2, context = :color=>true) == "(\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6))"
-    @test replace(sprint(io -> print(IOContext(io, :color => true), Mn3x2)), "RecursiveArrayTools." => "") == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}((\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6)))"
-    @test repr(Vn1, context = :color=>true) == "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
-    @test sprint(io -> print(IOContext(io, :color => true), Vn1)) == "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
-    @test repr(:"text/plain", Vn1, context = :color=>true) == "Single-element (discouraged) ArrayPartition(ArrayPartition(Vector{<:Number})):\n 1.0"
-    @test repr(Vu3, context = :color=>true) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
-    @test repr(:"text/plain", Vu3, context = :color=>true) == "3-element mutable ArrayPartition:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n                3.0"
-    @test sprint(io -> print(IOContext(io, :color => true), Vu3)) == "\e[36mconvert_to_mixed(\e[39m1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0\e[36m)\e[39m"
-
+    shortp(x) = repr(x, context = :color=>true)
+    longp(x) = repr(:"text/plain", x, context = :color=>true)
+    # Note on 'replace' below: when this test is evaluated as in 'runtests.jl', RecursiveArrayTools.ArrayPartition is written including with originator's module name, hence 'replace'.
+    sh(x) = replace(shortp(x), "RecursiveArrayTools." => "", "Unitfu." => "")
+    lo(x) = replace(longp(x), "RecursiveArrayTools." => "", "Unitfu." => "")
+    @test sh(E) == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
+    @test lo(E) == "()\"#undef\""
+    @test sh(E) == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
+    @test sh(Mn1) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
+    @test lo(Mn1) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}}}}}:\n 1"
+    @test sh( Mn1) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
+    @test sh(Mn2) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
+    @test lo(Mn2) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}:\n 1  2\n 3  4"
+    @test sh( Mn2) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
+    @test sh(Mu2)== "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
+    @test lo(Mu2)[1:80] == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Qu"
+    @test sh( Mu2) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
+    @test sh(Mn3) == "\e[36mconvert_to_mixed(\e[39m[1 2 3; 4 5 6; 7 8 9]\e[36m)\e[39m"
+    @test lo(Mn3) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}}}:\n 1  2  3\n 4  5  6\n 7  8  9"
+    @test sh(Mu3) =="\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
+    @test lo(Mu3)[1:80] == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Qu"
+    @test sh( Mu3) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
+    @test sh(Mn3x2)[1:80] == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{In"
+    @test lo(Mn3x2) == "(\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6))"
+    @test sh( Mn3x2) == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}((\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6)))"
+    @test sh(Vn1)== "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
+    @test sh( Vn1) == "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
+    @test lo(Vn1) == "Single-element (discouraged) ArrayPartition(ArrayPartition(Vector{<:Number})):\n 1.0"
+    @test sh(Vu3) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
+    @test lo(Vu3) == "3-element mutable ArrayPartition:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n                3.0"
+    @test sh(Vu3) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
     @test @inferred(transpose(Mn1)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Mu1)) isa LinearAlgebra.Transpose
     tMn2 = transpose(Mn2)
     @test tMn2 isa LinearAlgebra.Transpose
     @test @inferred(transpose(Mu2)) isa LinearAlgebra.Transpose
     tMu2 = transpose(Mu2)
-    @test sprint(io -> print(IOContext(io, :color => true), tMu2)) == "[1\e[36mkg\e[39m 3\e[36ms\e[39m; 2\e[36ms\e[39m 4\e[36mkg\e[39m]"
+    @test sh(tMu2) == "[1\e[36mkg\e[39m 3\e[36ms\e[39m; 2\e[36ms\e[39m 4\e[36mkg\e[39m]"
     @test @inferred(transpose(Mn3)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Mu3)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Mn3x2)) isa LinearAlgebra.Transpose

@@ -1,8 +1,10 @@
 module MechGlueDiffEqBase
 # TODO: Don't import. Use!
 import Base: similar, getindex, setindex!, inv, +, -, zip
-import Unitfu: AbstractQuantity, Quantity, ustrip, norm, unit, zero, numtype
-import Unitfu: uconvert, dimension, ∙
+import MechanicalUnits
+import MechanicalUnits: numtype
+using MechanicalUnits: Quantity, ustrip, norm, unit, zero
+import Unitfu: uconvert, dimension, ∙, AbstractQuantity   # TODO: Try to do away with AbstractQuantity.
 import Unitfu: Dimensions, Dimension, FreeUnits, NoUnits, DimensionlessQuantity
 import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2, remake, abs2_and_sum
 import DiffEqBase: calculate_residuals, @muladd, __solve, BVProblem, solve
@@ -11,9 +13,9 @@ using BoundaryValueDiffEq: Shooting
 using RecursiveArrayTools
 import RecursiveArrayTools.unpack
 using RecursiveArrayTools: ArrayPartitionStyle, npartitions, unpack_args
-import OrdinaryDiffEq
-import OrdinaryDiffEq.FiniteDiff: compute_epsilon, finite_difference_derivative
-import OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, finite_difference_jacobian!, JacobianCache
+import FiniteDiff
+import FiniteDiff: compute_epsilon, finite_difference_derivative
+import FiniteDiff: finite_difference_jacobian, finite_difference_jacobian!, JacobianCache
 using OrdinaryDiffEq.FiniteDiff: default_relstep, fdtype_error
 import Base: show, summary, print, setindex, size, ndims
 import Base: \, IndexStyle, axes, BroadcastStyle, Broadcast.combine_styles, copy
@@ -111,7 +113,8 @@ end
 
 include("broadcast_mixed_matrix.jl")
 include("derivatives_dimensional.jl")
-include("jacobian_prototypes.jl")
+include("jacobian_prototype.jl")
+include("jacobian_cache.jl")
 include("once_differentiable.jl")
 include("multiply_divide.jl")
 include("solve_dimensional.jl")

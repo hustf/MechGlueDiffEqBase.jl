@@ -28,10 +28,10 @@ function LenNTRCache(df)
     xold = copy(x)
     r = copy(df.F)
     r_predict = copy(r)
-    p = ustrip(copy(x))
-    p_c = ustrip(copy(x))
-    pi = ustrip(copy(x))
-    d = ustrip(copy(x))
+    p = ustrip.(copy(x))
+    p_c = ustrip.(copy(x))
+    pi = ustrip.(copy(x))
+    d = ustrip.(copy(x))
     LenNTRCache(x, xold, r, r_predict, p, p_c, pi, d)
 end
 
@@ -57,7 +57,7 @@ function trust_region_(df::OnceDifferentiable,
     NLsolve.check_isfinite(cache.r)
 
     it = 0
-    x_converged, f_converged = assess_convergence(ustrip(initial_x), ustrip(cache.xold), ustrip(NLsolve.value(df)), NaN, ftol)
+    x_converged, f_converged = assess_convergence(ustrip.(initial_x), ustrip.(cache.xold), ustrip.(NLsolve.value(df)), NaN, ftol)
 
     stopped = any(isnan, cache.x) || any(isnan, NLsolve.value(df)) ? true : false
 
@@ -75,7 +75,7 @@ function trust_region_(df::OnceDifferentiable,
         return SolverResultsDimensional(name,     # method::String
             initial_x,                            # initial_x::I
             copy(cache.x),                        # zero::Z
-            maximum(x-> abs(ustrip(x)), cache.r), # residual_norm::rT
+            maximum(x-> abs(ustrip.(x)), cache.r), # residual_norm::rT
             it,                                   # iterations::Int
             x_converged,                          # x_converged::Bool
             xtol,                                 # xtol::rT
@@ -93,7 +93,7 @@ function trust_region_(df::OnceDifferentiable,
     if autoscale
         J = NLsolve.jacobian(df)
         for j = 1:nn
-            cache.d[j] = norm(view(ustrip(J), :, j))
+            cache.d[j] = norm(view(ustrip.(J), :, j))
             @debug "trust_region_:88" it j cache.d[j] string(J)
             if cache.d[j] == zero(cache.d[j])
                 cache.d[j] = one(cache.d[j])
@@ -145,7 +145,7 @@ function trust_region_(df::OnceDifferentiable,
                 end
             end
             @debug "trustregion_:147"
-            x_converged, f_converged = assess_convergence(ustrip(cache.x), ustrip(cache.xold), ustrip(cache.r), xtol, ftol)
+            x_converged, f_converged = assess_convergence(ustrip.(cache.x), ustrip.(cache.xold), ustrip.(cache.r), xtol, ftol)
             @debug "trustregion_:149"
             converged = x_converged || f_converged
         else
@@ -173,7 +173,7 @@ function trust_region_(df::OnceDifferentiable,
     return SolverResultsDimensional(name,            # method::String
             initial_x,                            # initial_x::I
             copy(cache.x),                        # zero::Z
-            maximum(x-> abs(ustrip(x)), cache.r), # residual_norm::rT
+            maximum(x-> abs(ustrip.(x)), cache.r), # residual_norm::rT
             it,                                   # iterations::Int
             x_converged,                          # x_converged::Bool
             xtol,                                 # xtol::rT
@@ -237,7 +237,7 @@ function dogleg_dimensional!(p, p_c, p_i,
         g .= g ./ d.^2
         @debug "dogleg_dimensional!:238" string(g) string(d)
         # compute Cauchy point
-        p_c .= -NLsolve.wnorm(d, g)^2 / UNITLESS_ABS2(ustrip(J) * g) .* g
+        p_c .= -NLsolve.wnorm(d, g)^2 / UNITLESS_ABS2(ustrip.(J) * g) .* g
         @debug "dogleg_dimensional!:241" string(p_c) delta NLsolve.wnorm(d, p_c)
         if NLsolve.wnorm(d, p_c) >= delta
             # Cauchy point is out of the region, take the largest step along

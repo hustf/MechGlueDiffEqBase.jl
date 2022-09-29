@@ -1,12 +1,12 @@
-2022-09-24 test_030.jl
+2022-09-29 test_030.jl
 Test Summary:      | Pass  Total  Time
-Utilities, NLsolve |    7      7  3.0s
+Utilities, NLsolve |    7      7  2.9s
 Test Summary:                      | Pass  Total  Time
-Newton trust region solve, Vectors |    6      6  8.3s
+Newton trust region solve, Vectors |    6      6  8.4s
 Test Summary:                             | Pass  Total  Time
-Newton trust region solve, ArrayPartition |    6      6  7.4s
-Test Summary:                                         | Pass  Total   Time
-Newton trust region cache, ArrayPartition dimensional |   10     10  10.0s
+Newton trust region solve, ArrayPartition |    6      6  7.6s
+Test Summary:                                         | Pass  Total  Time
+Newton trust region cache, ArrayPartition dimensional |   10     10  9.2s
 Test Summary:      | Pass  Total  Time
 Utilities, NLsolve |    7      7  0.0s
 Test Summary:                      | Pass  Total  Time
@@ -17,6 +17,6 @@ Test Summary:                                         | Pass  Total  Time
 Newton trust region cache, ArrayPartition dimensional |   10     10  0.3s
 
 @timed stats:
-(value = nothing, time = 28.7860888, bytes = 4901145680, gctime = 1.068787, gcstats = Base.GC_Diff(4901145680, 765, 59, 84292041, 50646, 1113, 1068787000, 10, 0))
+(value = nothing, time = 28.1685999, bytes = 5096442552, gctime = 1.553439, gcstats = Base.GC_Diff(5096442552, 749, 54, 89469500, 52148, 1147, 1553439000, 23, 1))
 @timed stats next run:
-(value = nothing, time = 0.6536156, bytes = 63825054, gctime = 0.0, gcstats = Base.GC_Diff(63825054, 1, 0, 1184617, 1628, 0, 0, 0, 0))
+(value = nothing, time = 0.6488685, bytes = 62973984, gctime = 0.0, gcstats = Base.GC_Diff(62973984, 1, 0, 1172250, 1624, 0, 0, 0, 0))
