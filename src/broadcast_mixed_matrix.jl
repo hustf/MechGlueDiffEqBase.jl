@@ -1,6 +1,6 @@
-#####################################################
-# Inferrability of mixed matrices during broadcasting
-#####################################################
+###############################################
+# Inferrable mixed matrices during broadcasting
+###############################################
 # Types and traits are defined in 'io_traits_conversion'
 # These definitions tells the compiler more type
 # details in advance of mapping or broadcasting.
@@ -48,6 +48,44 @@ zip(A::AbstractMatrix, B::MixedCandidate) = _zip(mixed_array_trait(B), A, B)
 _zip(::MatSqMut, A::MixedCandidate, B) = Base.Iterators.Zip((A, transpose(B)))
 _zip(::MatSqMut, A, B::MixedCandidate) = Base.Iterators.Zip((transpose(A), B))
 _zip(::Mixed, A, B) = Base.Iterators.Zip((A, B))                   # Fallback
+
+######################################
+# Inferrable getindex
+# Broadcasting is already inferrable. 
+# These methods improves other 
+# inferrence by inlining. 
+# Tested in test_014.jl
+######################################
+# Extends RecursiveArrayTools\src\array_partition.jl:200
+Base.@propagate_inbounds @inline Base.getindex(A::MixedCandidate, i::Int) = _getindex(mixed_array_trait(A), A, i)
+@inline _getindex(::VecMut, A::ArrayPartition, i::Int) = first(getindex(A.x, i)) # TODO two-parameter version, consider what occurs before this.
+@inline function _getindex(::VecMut, A::ArrayPartition, i::Int, j)
+    @boundscheck 0 < i <= length(A.x) || throw(BoundsError(A.x, i))
+    @boundscheck j == 1 || throw(BoundsError(A.x, j))
+    first(getindex(A.x, i))
+end
+@inline function _getindex(::Single, A::ArrayPartition, i::Int)
+    @boundscheck i == 1 || throw(BoundsError(A.x, i))
+    first(getindex(A.x, i))
+end
+@inline function _getindex(::Single, A::ArrayPartition, i::Int, j)
+    @boundscheck i == 1 || throw(BoundsError(A.x, i))
+    @boundscheck j == 1 || throw(BoundsError(A.x, j))
+    first(getindex(A.x, i))
+end
+# Extends RecursiveArrayTools\src\array_partition.jl:215
+Base.@propagate_inbounds @inline Base.getindex(A::MixedCandidate, i::Int, j::Int) = _getindex(mixed_array_trait(A), A, i, j)
+@inline function _getindex(::MatSqMut, A::ArrayPartition, i::Int, j::Int)
+    @boundscheck 0 < i <= length(A.x) || throw(BoundsError(A.x, i))
+    @inbounds b = A.x[i]
+    @boundscheck checkbounds(b, j)
+    @inbounds return first(b.x[j])
+end
+
+#######
+# TODO
+#######
+
 # Todo consider implementing for mixed matrices:
 #Base.mapreduce(f,op,A::ArrayPartition) = mapreduce(f,op,(mapreduce(f,op,x) for x in A.x))
 #Base.filter(f,A::ArrayPartition) = ArrayPartition(map(x->filter(f,x), A.x))
