@@ -138,6 +138,14 @@ import LinearAlgebra
     @test @inferred(transpose(Mn3x2)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Vn1)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Vu3)) isa LinearAlgebra.Transpose
+    # Coverage of print
+    iob = IOBuffer()
+    println(iob, E)
+    println(iob, Mn1)
+    println(iob, Vn1)
+    println(iob, Mu2)
+    println(iob, Vu3)
+    String(take!(iob))
 end
 
 @testset "A Mutable fixed-length mixed arrays - Inferred broadcast and mapping" begin
@@ -306,8 +314,12 @@ end
 # B Indexing, mutating, type guarantee
 ######################################
 @testset "B Indexing, mutating, type guarantee - Direct construction, getindex, setindex" begin
+    E = ArrayPartition()
+    Vn1 = ArrayPartition([1.0])
     Mn3 = ArrayPartition(ArrayPartition([1], [2], [3]), ArrayPartition([4], [5], [6]), ArrayPartition([7], [8], [9]))
     Mu3 = ArrayPartition(ArrayPartition([1]kg, [2]s, [3]kg), ArrayPartition([4]s, [5]kg, [6]s), ArrayPartition([7]kg, [8]s, [9]kg*s))
+    Vu3 = ArrayPartition([1.0]s⁻¹, [2.0]s⁻², [3.0])
+    Mn3x2 = ArrayPartition(ArrayPartition([1], [2]), ArrayPartition([3], [4]), ArrayPartition([5], [6]))
     @test Mn3[2, 3] == 6
     @test Mu3[2, 3] == 6s
     Mn3[2,3] = 7
@@ -316,6 +328,21 @@ end
     Mu3[2,3] = 7s
     @test Mu3[2, 3] == 7s
     @test_throws DimensionError Mu3[2, 3] = 8cm
+    @test Mn3[2, 3] == 7
+    @test Vn1[1] == 1.0
+    @test transpose(Mn3)[3, 2] == 7
+    @test transpose(Vn1)[1] == 1.0
+    @test transpose(Vu3)[1,2] == 2.0s⁻²
+    @test_throws BoundsError transpose(Vu3)[2,1] == 2.0s⁻²
+    @test size(transpose(Mn3)) == (3, 3)
+    @test size(Mn3x2) == (6, )           # We don't care about rectangle matrices, not implemented
+    @test size(transpose(Mn3x2)) == (1, 6)
+    @test_throws BoundsError transpose(Vn1)[1,1 ] == 1.0
+    # transposed setindex
+    transpose(Mn3)[1, 2] = 40
+    @test Mn3[2,1] == 40
+    transpose(Vu3)[1, 2] = 20.0s⁻²
+    @test Vu3[2] == 20.0s⁻²
 end
 ##################################
 # C More conversion / construction

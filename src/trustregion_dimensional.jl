@@ -204,7 +204,7 @@ function dogleg_dimensional!(p, p_c, p_i,
                  r, d, J, delta::Real)
     T = eltype(d)
     @debug "dogleg_dimensional!:206" string(p) string(p_c) string(p_i) string(r) string(d) string(J) delta maxlog = 2
-    # TODO do this in-place. Consider propagate errors like commented below.
+    # For more difficult problems, do this in-place. Consider propagate errors like commented below.
     #try
         copyto!(p_i, ustrip.(J \ r))# Gauss-Newton step
     #catch e
@@ -250,6 +250,7 @@ function dogleg_dimensional!(p, p_c, p_i,
             # from this point on we will only need p_i in the term p_i-p_c.
             # so we reuse the vector p_i by computing p_i = p_i - p_c and then
             # just so we aren't confused we name that p_diff
+            @debug "dogleg_dimensional!:253   - not tested"
             p_i .-= p_c
             p_diff = p_i
 

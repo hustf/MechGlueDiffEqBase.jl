@@ -1,41 +1,56 @@
 module MechGlueDiffEqBase
 # TODO: Don't import. Use!
-import Base: similar, getindex, setindex!, inv, +, -, zip
+import Base: similar, inv, +, -, *, \
+import Base: show, summary, print, size, ndims
+import Base: axes, copy, getindex, setindex!
+using Base: array_summary, throw_boundserror, setindex
+import Base.Iterators
+import Base.Iterators: zip
+import Base.Broadcast
+import Base.Broadcast: BroadcastStyle, combine_styles
+using Base.Broadcast: broadcasted, IndexStyle
+import Printf
+using Printf: @printf
+
+import LinearAlgebra
+import LinearAlgebra: mul!
+using LinearAlgebra: require_one_based_indexing
+using LinearAlgebra: AdjOrTransAbsVec, Transpose
+
 import MechanicalUnits
 import MechanicalUnits: numtype
-using MechanicalUnits: Quantity, ustrip, norm, unit, zero
-import Unitfu: uconvert, dimension, ∙, AbstractQuantity   # TODO: Try to do away with AbstractQuantity.
-import Unitfu: Dimensions, Dimension, FreeUnits, NoUnits, DimensionlessQuantity
-import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2, remake, abs2_and_sum
-import DiffEqBase: calculate_residuals, @muladd, __solve, BVProblem, solve
+using MechanicalUnits: Quantity, ustrip, norm, unit, zero, ∙, uconvert
+using MechanicalUnits: uconvert, dimension, ∙
+using MechanicalUnits: Dimensions, Dimension, FreeUnits, NoUnits, DimensionlessQuantity
+using MechanicalUnits.Unitfu: AbstractQuantity # Consider dropping this (used below)
+
+import DiffEqBase
+import DiffEqBase: value, ODE_DEFAULT_NORM, UNITLESS_ABS2
+using  DiffEqBase: @muladd, __solve, BVProblem, solve 
+
 import BoundaryValueDiffEq
 using BoundaryValueDiffEq: Shooting
-using RecursiveArrayTools
-import RecursiveArrayTools.unpack
-using RecursiveArrayTools: ArrayPartitionStyle, npartitions, unpack_args
+
+import ArrayInterfaceCore
+import RecursiveArrayTools
+import RecursiveArrayTools: unpack
+using RecursiveArrayTools: ArrayPartition, ArrayPartitionStyle, npartitions, unpack_args
+
 import FiniteDiff
 import FiniteDiff: compute_epsilon, finite_difference_derivative
 import FiniteDiff: finite_difference_jacobian, finite_difference_jacobian!, JacobianCache
-using OrdinaryDiffEq.FiniteDiff: default_relstep, fdtype_error
-import Base: show, summary, print, setindex, size, ndims
-import Base: \, IndexStyle, axes, BroadcastStyle, Broadcast.combine_styles, copy
-using Base: array_summary, throw_boundserror, broadcasted
-using OrdinaryDiffEq.FiniteDiff: _vec
-using Printf
-import ArrayInterfaceCore
+using FiniteDiff: default_relstep, fdtype_error, _vec
+
 import NLSolversBase
-import NLSolversBase: alloc_DF, OnceDifferentiable, NonDifferentiable, x_of_nans
-using NLSolversBase: f!_from_f, df!_from_df, fdf!_from_fdf, value_jacobian!!, AbstractObjective
+import NLSolversBase: alloc_DF, OnceDifferentiable
+using NLSolversBase: f!_from_f, df!_from_df, fdf!_from_fdf, value_jacobian!!
+
 import NLsolve
-import NLsolve: nlsolve, trust_region, assess_convergence, check_isfinite, converged
-using NLsolve: NewtonTrustRegionCache, dogleg!
-import LinearAlgebra
-using LinearAlgebra: require_one_based_indexing, istril, istriu, lu, wrapperop, MulAddMul
-import LinearAlgebra: mul!, *
-using LinearAlgebra: Diagonal, LowerTriangular, UpperTriangular, AdjOrTransAbsVec, Transpose
-using LinearAlgebra: generic_matvecmul!
-export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Unitfu, AbstractQuantity, Quantity, FreeUnits
-export @import_expand, ∙
+import NLsolve: trust_region, check_isfinite, converged
+using NLsolve: NewtonTrustRegionCache, dogleg!, nlsolve, assess_convergence
+
+# TODO only export extended and defined functions and types?
+export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Quantity, FreeUnits
 export norm , ArrayPartition, similar, zero, compute_epsilon
 export jacobian_prototype_zero, jacobian_prototype_nan
 export finite_difference_derivative, finite_difference_jacobian, show, summary, print
@@ -43,12 +58,41 @@ export MixedCandidate, convert_to_array, JacobianCache
 export numtype, alloc_DF, mixed_array_trait, convert_to_mixed
 export MatSqMut, VecMut, NotMixed, NotMixed, Single, Empty
 export is_square_matrix_mutable, is_vector_mutable_stable
-export OnceDifferentiable, DIMENSIONAL_NLSOLVE, check_isfinite
+export OnceDifferentiable, check_isfinite
 
 
-# TODO: wash list, 'using' over 'import'
-
-# recursive types of ArrayPartition
+# The file "io_traits_conversion.jl" defines, by traits, 
+# certain variants of RecursiveArrayTools.ArrayPartition.
+# We dispatch on these traits.
+#
+# Defines for external use:
+#   convert_to_mixed
+#   convert_to_array
+#   is_square_matrix_mutable
+#   is_vector_mutable_stable
+# Defines for internal dispatch:
+#   mixed_array_trait
+# Defines type constants for internal use: 
+#   Q, E, RW(N), MatrixMixedCandidate, MixedCandidate,UnionVeqSqMut
+# Defines (trait) types: 
+#   Mixed, MatSqMut, VecMut, NotMixed, Single, Empty
+# Defines for internal use:
+#   vpack
+#   ArrayPartition_from_single_element_vectors
+#   print_as_mixed
+#   getindex_of_transposed_mixed (TODO inline it)
+#   setindex!_of_transposed_mixed
+#   IndexStyle_of_transposed_mixed
+# Extends:
+#   Base.size
+#   Base.ndims
+#   Base.axes
+#   Base.getindex 
+#   Base.setindex!
+#   Base.print
+#   Base.show
+#   Base.summary
+#   Base.Broadcast._IndexStyle (??)
 include("io_traits_conversion.jl")
 
 # Extended imported functions from base are not currently exported.
@@ -110,73 +154,84 @@ function similar(x::Vector{Q}, S::Type) where {Q<:AbstractQuantity{T, D, U} wher
     x0 = Vector{S}(undef, size(x, 1))
 end
 
+# MechGlueDiffEqBase.jl extends:
+#   UNITLESS_ABS2
+#   value
+#   ODE_DEFAULT_NORM
+#   Base.similar
+
+# This extends:
+#   Base.Broadcast.BroadcastStyle
+#   Base.Broadcast.combine_styles
+#   Base.copy
+#   Base.map
+#   Base.Iterators.zip
+#   RecursiveArrayTools.unpack
+# And defines for internal use
+#   maprow
+#   _combine_styles
+#   _map
+#   _zip
+#   _getindex
 
 include("broadcast_mixed_matrix.jl")
+
+# This extends:
+#   FiniteDiff.compute_epsilon
+#   FiniteDiff.finite_difference_derivative
 include("derivatives_dimensional.jl")
+
+# This defines:
+#   jacobian_prototype_zero
+#   jacobian_prototype_nan
 include("jacobian_prototype.jl")
+
+# This extends:
+#   FiniteDiff.JacobianCache
 include("jacobian_cache.jl")
+
+# This extends
+#   NLSolversBase.alloc_DF
+#   NLSolversBase.OnceDifferentiable
 include("once_differentiable.jl")
+
+# This extends
+#   LinearAlgebra.mul!
+#   Base.(*)
+#   Base.(+)
+#   Base.(-)
+#   Base.(\)
+#   Base.inv
+# And defines
+#   premul_inv (used by (\))
 include("multiply_divide.jl")
+
+# This defines a similar structure to NLSolve/SolverResults:
+#   SolverResultsDimensional
+# It extends:
+#   NLSolve.converged
+#   Base.show
 include("solve_dimensional.jl")
+
+# This defines a new type <: NLsolve.AbstractSolverCache:
+#   LenNTRCache
+#   dogleg_dimensional!
+# It extends:
+#   NLSolve.trust_region
 include("trustregion_dimensional.jl")
+
+# This extends:
+#   FiniteDiff.finite_difference_jacobian
+#   FiniteDiff.finite_difference_jacobian!
 include("jacobians_dimensional.jl")
+
+# This extends:
+#   Unitfu.numtype
+#   NLSolve.check_isfinite
+# And defines:
+#   determinant
+#   determinant_dimension
 include("utils_dimensional.jl")
 
 
-# KISS pre-compillation to reduce loading times
-# This is simply a boiled-down obfuscated test_013.jl
-# It is commented out because there is no apparent effect.
-#=
-import Unitfu: m, km, s, kg, inch, °, ∙
-    # Constants we don't think we'll change ever
-    x₀ = 0.0km
-    y₀ = 0.0km
-    ø = 15inch
-    ρ = 1.225kg/m^3
-    g = 9.80665m/s^2
-
-    # Calculated constants
-    Aₚᵣ = π/4 * ø^2
-    # Constants that we define as functions, because we may
-    # want to modify them later in the same scripting session.
-    α₀()  = 30°
-    v₀()  = 1050m/s
-
-    mₚ()   = 495kg
-    C_s() = 0.4
-    x´₀() = v₀() * cos(α₀())
-    y´₀() = v₀() * sin(α₀())
-
-    # Local tuple initial condition.
-    u₀ = convert_to_mixed(x₀, y₀, x´₀(), y´₀())
-
-
-    # Functions
-    v(vx, vy) = √(vx^2 + vy^2)
-    R(vx, vy) = 0.5∙ρ∙C_s()∙Aₚᵣ∙v(vx, vy)^2
-    α(vx, vy) = atan(vy, vx)
-    Rx(vx, vy) = R(vx, vy) * cos(α(vx, vy))
-    Ry(vx, vy) = R(vx, vy) * sin(α(vx, vy))
-
-
-    # Local tuple, i.e. the interesting degrees of freedom
-    # and their derivatives
-    function  Γ!(u´, u, p, t)
-        x, y, x´, y´ = u
-        # Calculate the acceleration for this step
-        x´´ =     -Rx(x´, y´) / mₚ()
-        y´´ = -1g -Ry(x´, y´) / mₚ()
-        # Output
-        u´ .= x´, y´, x´´, y´´
-        u´
-    end
-
-    function solve_guarded(u₀)
-        # Test the functions
-        Γ!(u₀/s,u₀, nothing, nothing)
-        prob = OrdinaryDiffEq.ODEProblem( Γ!,u₀,(0.0,60)s)
-        solve(prob, OrdinaryDiffEq.Tsit5())
-    end
-    solve_guarded(u₀)
-=#
 end

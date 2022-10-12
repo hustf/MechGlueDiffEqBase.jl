@@ -1,10 +1,8 @@
 using Test
-using FiniteDiff, StaticArrays
+using MechanicalUnits: @import_expand, ustrip, ∙
 using MechGlueDiffEqBase
+using FiniteDiff, StaticArrays
 using MechGlueDiffEqBase: finite_difference_jacobian, finite_difference_jacobian!
-using MechanicalUnits: @import_expand, ustrip
-#using FiniteDiff: JacobianCache
-#using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartition
 
 @import_expand kg s m
 #####################################

@@ -160,5 +160,9 @@ end
      # d) Test the OnceDifferentiable interface more
      J = NLSolversBase.value_jacobian!!(df, x)[2]
      @test all(J .≈ convert_to_mixed(jamate .* [1 s;s⁻¹ 1]))
+     # e) Printing
+     iob = IOBuffer()
+     println(iob, sol)
+     @test length(String(take!(iob))) > 100
 end
 

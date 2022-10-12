@@ -58,7 +58,7 @@ _zip(::Mixed, A, B) = Base.Iterators.Zip((A, B))                   # Fallback
 ######################################
 # Extends RecursiveArrayTools\src\array_partition.jl:200
 Base.@propagate_inbounds @inline Base.getindex(A::MixedCandidate, i::Int) = _getindex(mixed_array_trait(A), A, i)
-@inline _getindex(::VecMut, A::ArrayPartition, i::Int) = first(getindex(A.x, i)) # TODO two-parameter version, consider what occurs before this.
+@inline _getindex(::VecMut, A::ArrayPartition, i::Int) = first(getindex(A.x, i)) 
 @inline function _getindex(::VecMut, A::ArrayPartition, i::Int, j)
     @boundscheck 0 < i <= length(A.x) || throw(BoundsError(A.x, i))
     @boundscheck j == 1 || throw(BoundsError(A.x, j))

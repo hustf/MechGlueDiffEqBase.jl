@@ -1,0 +1,22 @@
+2022-10-12 test_010.jl
+Test Summary:                                                          | Pass  Total  Time
+A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  5.3s
+Test Summary:                                                        | Pass  Total   Time
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  16.1s
+Test Summary:                                                                  | Pass  Total  Time
+B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |   18     18  0.3s
+Test Summary:                                                                             | Pass  Total  Time
+C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  1.8s
+Test Summary:                                                          | Pass  Total  Time
+A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  0.1s
+Test Summary:                                                        | Pass  Total  Time
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  6.4s
+Test Summary:                                                                  | Pass  Total  Time
+B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |   18     18  0.0s
+Test Summary:                                                                             | Pass  Total  Time
+C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  0.0s
+
+@timed stats:
+(value = nothing, time = 24.2469567, bytes = 3963627157, gctime = 0.6262706, gcstats = Base.GC_Diff(3963627157, 42, 0, 65160709, 27944, 675, 626270600, 8, 0))
+@timed stats next run:
+(value = nothing, time = 7.3112077, bytes = 1127164510, gctime = 0.3027958, gcstats = Base.GC_Diff(1127164510, 19, 0, 17183267, 11194, 285, 302795800, 3, 0))

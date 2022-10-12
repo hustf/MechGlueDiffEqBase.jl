@@ -3,15 +3,6 @@
 using Test
 using MechGlueDiffEqBase
 using MechanicalUnits: @import_expand, ∙
-#using MechanicalUnits.Unitfu: DimensionError
-#import OrdinaryDiffEq.FiniteDiff
-#using OrdinaryDiffEq.FiniteDiff: finite_difference_derivative, default_relstep
-#using OrdinaryDiffEq.FiniteDiff: finite_difference_jacobian, JacobianCache, finite_difference_jacobian!
-#import OrdinaryDiffEq.ArrayInterface
-#import Base: Broadcast
-#using Base.Broadcast: Broadcasted, result_style, combine_styles, DefaultArrayStyle, BroadcastStyle
-#import MechGlueDiffEqBase.RecursiveArrayTools
-#using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle, unpack
 @import_expand(cm, kg, s)
 
 ################################################
@@ -28,7 +19,6 @@ using MechanicalUnits: @import_expand, ∙
     @test compute_epsilon(Val(:complex), 1.0kg, nothing, nothing, nothing) ≈ 2.220446049250313e-16kg
     #
     ## Dimensionless absstep (which is "wrong")
-    #compute_epsilon(::Val{:central}, x::Quantity{T1, D, U}, relstep::Real, absstep::Real, dir = nothing) where {T1<:Real, D, U}
     @test compute_epsilon(Val(:central), 1.0kg, 0.001, 0.001, nothing) === 0.001kg
     @test compute_epsilon(Val(:forward), 1.0kg, 0.001, 0.001, nothing) === 0.001kg
     @test compute_epsilon(Val(:complex), 1.0kg, 0.001, 0.001, nothing) ≈ 2.220446049250313e-16kg

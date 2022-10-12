@@ -7,7 +7,7 @@ test_012.jl
 =#
 
 using Test
-using MechanicalUnits: @import_expand
+using MechanicalUnits: @import_expand, ∙
 @import_expand kg m s
 using MechGlueDiffEqBase
 

@@ -168,9 +168,9 @@ function convert_to_array(::Mixed, A)
     throw(InexactError(:convert_to_array, Array, A))
     A
 end
-##########
-# Indexing
-##########
+################################################
+# Indexing (more in 'broadcast_mixed_matrix.jl')
+################################################
 size(A::MatrixMixedCandidate) = size_of_mixed(A, mixed_array_trait(A))
 size_of_mixed(A, ::MatSqMut) = size(convert_to_array(A))
 size_of_mixed(A, ::T) where {T<:Mixed } = (length(A),)
@@ -181,29 +181,28 @@ ndims_of_mixed(::AbstractArray{T,N}, ::S) where {T, N, S<:Mixed } = N
 axes(A::AdjOrTransAbsVec{T,S}) where {T, S <: MatrixMixedCandidate} = reverse(axes(A.parent))
 
 # getindex
-Base.@propagate_inbounds function getindex(A::AdjOrTransAbsVec{T,S}, i::Int, j::Int) where {T, S <: MixedCandidate}
+Base.@propagate_inbounds @inline function getindex(A::AdjOrTransAbsVec{T,S}, i::Int, j::Int) where {T, S <: MixedCandidate}
     @debug "getindex " S i j mixed_array_trait(A.parent)
     getindex_of_transposed_mixed(mixed_array_trait(A.parent), A, i, j)
 end
-getindex_of_transposed_mixed(::MatSqMut, A, i, j ) = A.parent[j, i]
-function getindex_of_transposed_mixed(::VecMut, A, i, j )
-    @assert i == 1
+@inline getindex_of_transposed_mixed(::MatSqMut, A, i, j ) = A.parent[j, i]
+@inline function getindex_of_transposed_mixed(::VecMut, A, i, j )
+    i !== 1 && throw_boundserror(A, (i, j))
     A.parent[j]
 end
-getindex_of_transposed_mixed(::S, A, i, j) where {S<:Mixed } = throw_boundserror(A, (i, j))
+@inline getindex_of_transposed_mixed(::S, A, i, j) where {S<:Mixed } = throw_boundserror(A, (i, j))
 
 
 # setindex!
-Base.@propagate_inbounds function setindex!(A::AdjOrTransAbsVec{T,S}, v, i::Int, j::Int) where {T, S <: MixedCandidate}
-    @debug "setindex! " v i j S mixed_array_trait(A.parent)
+Base.@propagate_inbounds @inline function setindex!(A::AdjOrTransAbsVec{T,S}, v, i::Int, j::Int) where {T, S <: MixedCandidate}
     setindex!_of_transposed_mixed(mixed_array_trait(A.parent), A, v, i, j)
 end
-setindex!_of_transposed_mixed(::MatSqMut, A, v, i, j ) = setindex!(A.parent, v, j, i)
-function setindex!_of_transposed_mixed(::VecMut, A, v, i, j )
+@inline setindex!_of_transposed_mixed(::MatSqMut, A, v, i, j ) = setindex!(A.parent, v, j, i)
+@inline function setindex!_of_transposed_mixed(::VecMut, A, v, i, j )
     @assert i == 1
     setindex!(A.parent, v, j)
 end
-setindex!_of_transposed_mixed(::S, A, v, i, j) where {S<:Mixed } = throw_boundserror(A, (i, j))
+@inline setindex!_of_transposed_mixed(::S, A, v, i, j) where {S<:Mixed } = throw_boundserror(A, (i, j))
 
 # index style
 # Because: IndexStyle(transpose(typeof([1 2;3 4]))) -> IndexCartesian()
@@ -251,6 +250,7 @@ function print_as_mixed(io::IO, ::VecMut, v::RW(N)) where N
     prefix = String(take!(buf))
     printstyled(ioc, color = col, ")")
     postfix = String(take!(buf))
+    @debug "Tested"
     Base.show_vector(io::IO, v, prefix, postfix)
 end
 
