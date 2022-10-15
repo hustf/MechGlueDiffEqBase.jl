@@ -94,7 +94,7 @@ function trust_region_(df::OnceDifferentiable,
         J = NLsolve.jacobian(df)
         for j = 1:nn
             cache.d[j] = norm(view(ustrip.(J), :, j))
-            @debug "trust_region_:88" it j cache.d[j] string(J)
+            @debug "trust_region_:97" it j cache.d[j] string(J)
             if cache.d[j] == zero(cache.d[j])
                 cache.d[j] = one(cache.d[j])
             end
@@ -105,8 +105,8 @@ function trust_region_(df::OnceDifferentiable,
         fill!(cache.d, one(real(T)))
     end
     @debug "trustregion_:107" string(cache.d) string(cache.x)
-    delta = factor * NLsolve.wnorm(cache.d ./ oneunit.(cache.d), cache.x ./ oneunit.(cache.x))
-    @debug "trustregion_" it T delta
+    delta = factor * NLsolve.wnorm(cache.d, cache.x ./ oneunit.(cache.x))
+    @debug "trustregion_ : 109" it T delta
     if delta == zero(delta)
         delta = factor
     end
@@ -115,7 +115,7 @@ function trust_region_(df::OnceDifferentiable,
 
     while !stopped && !converged && it < iterations
         it += 1
-        @debug "trustregion_:119" it T delta string(cache.p) string(cache.p_c) string(cache.r) string(cache.d)
+        @debug "trustregion_:118" it T delta string(cache.p) string(cache.p_c) string(cache.r) string(cache.d)
         # Compute proposed iteration step
         dogleg_dimensional!(cache.p, cache.p_c, cache.pi, cache.r, cache.d, NLsolve.jacobian(df), delta)
         copyto!(cache.xold, cache.x)
@@ -149,7 +149,8 @@ function trust_region_(df::OnceDifferentiable,
             @debug "trustregion_:149"
             converged = x_converged || f_converged
         else
-            cache.x .-= cache.p
+            @debug "trustregion_:152" string(cache.x) string(cache.p)
+            cache.x .-= cache.p .* unit.(cache.x)
             x_converged, converged = false, false
         end
 
@@ -183,8 +184,9 @@ function trust_region_(df::OnceDifferentiable,
             first(df.f_calls),                    # f_calls::Int
             first(df.df_calls))                   # g_calls::Int  
 end
+
 function trust_region(df::OnceDifferentiable,
-    initial_x::RW(N),
+    initial_x::MixedCandidate,
     xtol::Real,
     ftol::Real,
     iterations::Integer,
@@ -192,9 +194,10 @@ function trust_region(df::OnceDifferentiable,
     show_trace::Bool,
     extended_trace::Bool,
     factor::Real,
-    autoscale::Bool) where N
+    autoscale::Bool)
+    @assert is_vector_mutable_stable(initial_x)
     cache = LenNTRCache(df)
-    @debug "trust_region:197 LenNTRCache" xtol ftol string(initial_x) iterations factor N maxlog = 2
+    @debug "trust_region:200 LenNTRCache" xtol ftol string(initial_x) iterations factor maxlog = 2
     trust_region_(df, initial_x, xtol, ftol, iterations, store_trace, show_trace, extended_trace,
         convert(numtype(xtol), factor), autoscale, cache)
 end
@@ -203,7 +206,7 @@ end
 function dogleg_dimensional!(p, p_c, p_i,
                  r, d, J, delta::Real)
     T = eltype(d)
-    @debug "dogleg_dimensional!:206" string(p) string(p_c) string(p_i) string(r) string(d) string(J) delta maxlog = 2
+    @debug "dogleg_dimensional!:209" string(p) string(p_c) string(p_i) string(r) string(d) string(J) delta maxlog = 2
     # For more difficult problems, do this in-place. Consider propagate errors like commented below.
     #try
         copyto!(p_i, ustrip.(J \ r))# Gauss-Newton step
@@ -219,7 +222,7 @@ function dogleg_dimensional!(p, p_c, p_i,
     #        throw(e)
     #    end
     #end
-    @debug "dogleg_dimensional!:222" string(p_i) T maxlog = 5
+    @debug "dogleg_dimensional!:225" string(p_i) T maxlog = 5
     NLsolve.rmul!(p_i, -one(T))
     # Test if Gauss-Newton step is within the region
     if NLsolve.wnorm(d, p_i) <= delta
@@ -231,14 +234,14 @@ function dogleg_dimensional!(p, p_c, p_i,
         # gradient
         # compute g = J'r ./ (d .^ 2)
         g = p
-        @debug "dogleg_dimensional!:234" string(g) string(J) string(r)
-        g .= ustrip.(J \ r)
-        @debug "dogleg_dimensional!:236" string(g)
+        @debug "dogleg_dimensional!:237" string(g) string(J) string(r)
+        g .= ustrip.(J \ r)  # A faster version would strip J of units first.
+        @debug "dogleg_dimensional!:239" string(g)
         g .= g ./ d.^2
-        @debug "dogleg_dimensional!:238" string(g) string(d)
+        @debug "dogleg_dimensional!:241" string(g) string(d)
         # compute Cauchy point
         p_c .= -NLsolve.wnorm(d, g)^2 / UNITLESS_ABS2(ustrip.(J) * g) .* g
-        @debug "dogleg_dimensional!:241" string(p_c) delta NLsolve.wnorm(d, p_c)
+        @debug "dogleg_dimensional!:244" string(p_c) delta NLsolve.wnorm(d, p_c)
         if NLsolve.wnorm(d, p_c) >= delta
             # Cauchy point is out of the region, take the largest step along
             # gradient direction
@@ -250,7 +253,7 @@ function dogleg_dimensional!(p, p_c, p_i,
             # from this point on we will only need p_i in the term p_i-p_c.
             # so we reuse the vector p_i by computing p_i = p_i - p_c and then
             # just so we aren't confused we name that p_diff
-            @debug "dogleg_dimensional!:253   - not tested"
+            @debug "dogleg_dimensional!:256   - not tested"
             p_i .-= p_c
             p_diff = p_i
 

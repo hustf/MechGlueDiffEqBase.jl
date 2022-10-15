@@ -1,18 +1,18 @@
-2022-10-12 test_020.jl
+2022-10-15 test_020.jl
 Test Summary:                              | Pass  Total  Time
-ϵ for finite differentiation of quantities |    6      6  0.1s
+ϵ for finite differentiation of quantities |    6      6  0.2s
 Test Summary:                              | Pass  Total  Time
 Univariate finite derivative of quantities |    1      1  0.1s
 Test Summary:                            | Pass  Total  Time
-Derivative single point f : R -> R tests |    6      6  0.2s
+Derivative single point f : R -> R tests |    6      6  0.3s
 Test Summary:                              | Pass  Total  Time
 ϵ for finite differentiation of quantities |    6      6  0.0s
 Test Summary:                              | Pass  Total  Time
-Univariate finite derivative of quantities |    1      1  0.9s
+Univariate finite derivative of quantities |    1      1  0.0s
 Test Summary:                            | Pass  Total  Time
-Derivative single point f : R -> R tests |    6      6  0.0s
+Derivative single point f : R -> R tests |    6      6  0.1s
 
 @timed stats:
-(value = nothing, time = 0.4375388, bytes = 45497808, gctime = 0.0, gcstats = Base.GC_Diff(45497808, 1, 0, 801776, 65, 0, 0, 0, 0))
+(value = nothing, time = 0.6284833, bytes = 45223248, gctime = 0.0787804, gcstats = Base.GC_Diff(45223248, 0, 0, 801745, 64, 318, 78780400, 1, 0))
 @timed stats next run:
-(value = nothing, time = 0.9931384, bytes = 8593461, gctime = 0.0, gcstats = Base.GC_Diff(8593461, 0, 0, 156606, 19, 0, 0, 0, 0))
+(value = nothing, time = 0.1243529, bytes = 8585301, gctime = 0.0, gcstats = Base.GC_Diff(8585301, 0, 0, 156588, 19, 0, 0, 0, 0))

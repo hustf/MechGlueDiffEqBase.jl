@@ -1,0 +1,10 @@
+2022-10-15 test_032.jl
+Test Summary:           | Time
+Non-mixed mixed vectors | None  10.1s
+Test Summary:           |Time
+Non-mixed mixed vectors | None  0.1s
+
+@timed stats:
+(value = nothing, time = 10.1667385, bytes = 941120798, gctime = 0.2119204, gcstats = Base.GC_Diff(941120798, 101, 10, 18640482, 12398, 264, 211920400, 2, 0))
+@timed stats next run:
+(value = nothing, time = 0.1691322, bytes = 13410275, gctime = 0.0, gcstats = Base.GC_Diff(13410275, 0, 0, 251766, 107, 0, 0, 0, 0))

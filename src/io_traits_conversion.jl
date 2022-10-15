@@ -182,7 +182,6 @@ axes(A::AdjOrTransAbsVec{T,S}) where {T, S <: MatrixMixedCandidate} = reverse(ax
 
 # getindex
 Base.@propagate_inbounds @inline function getindex(A::AdjOrTransAbsVec{T,S}, i::Int, j::Int) where {T, S <: MixedCandidate}
-    @debug "getindex " S i j mixed_array_trait(A.parent)
     getindex_of_transposed_mixed(mixed_array_trait(A.parent), A, i, j)
 end
 @inline getindex_of_transposed_mixed(::MatSqMut, A, i, j ) = A.parent[j, i]
@@ -208,7 +207,6 @@ end
 # Because: IndexStyle(transpose(typeof([1 2;3 4]))) -> IndexCartesian()
 # This is (likely) used by the fallback `show`` methods
 function _IndexStyle(::Type{<:AdjOrTransAbsVec{T,S} where {T, S <: MixedCandidate}})
-    @debug "_IndexStyle"
     IndexStyle_of_transposed_mixed(mixed_array_trait(A.parent))
 end
 IndexStyle_of_transposed_mixed(::MatSqMut) = IndexCartesian()
@@ -250,7 +248,6 @@ function print_as_mixed(io::IO, ::VecMut, v::RW(N)) where N
     prefix = String(take!(buf))
     printstyled(ioc, color = col, ")")
     postfix = String(take!(buf))
-    @debug "Tested"
     Base.show_vector(io::IO, v, prefix, postfix)
 end
 
