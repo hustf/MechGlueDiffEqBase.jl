@@ -1,16 +1,16 @@
-2022-10-12 test_012.jl
+2022-10-15 test_012.jl
 Test Summary:      | Pass  Total  Time
-> Matrix inversion |    4      4  1.8s
+> Matrix inversion |    4      4  2.2s
 Test Summary:           | Pass  Total  Time
-> MixedMatrix inversion |    5      5  5.9s
+> MixedMatrix inversion |    5      5  7.8s
 Test Summary:                                     | Pass  Total  Time
-> MixedMatrix inversion with dimensional diagonal |    7      7  6.3s
+> MixedMatrix inversion with dimensional diagonal |    7      7  8.0s
 Test Summary:                                   | Pass  Total   Time
-> Pre-multiply with the inverse of mixed matrix |   17     17  17.3s
+> Pre-multiply with the inverse of mixed matrix |   17     17  22.3s
 Test Summary:  | Pass  Total  Time
-Multiplication |   19     19  6.5s
-Test Summary:                             | Pass  Total  Time
-> Beam stiffness and flexibility matrices |   10     10  9.9s
+Multiplication |   19     19  8.2s
+Test Summary:                             | Pass  Total   Time
+> Beam stiffness and flexibility matrices |   10     10  12.4s
 Test Summary:      | Pass  Total  Time
 > Matrix inversion |    4      4  0.0s
 Test Summary:           | Pass  Total  Time
@@ -22,9 +22,9 @@ Test Summary:                                   | Pass  Total  Time
 Test Summary:  | Pass  Total  Time
 Multiplication |   19     19  0.0s
 Test Summary:                             | Pass  Total  Time
-> Beam stiffness and flexibility matrices |   10     10  0.0s
+> Beam stiffness and flexibility matrices |   10     10  0.1s
 
 @timed stats:
-(value = nothing, time = 47.9699922, bytes = 8714708866, gctime = 1.8049849, gcstats = Base.GC_Diff(8714708866, 849, 52, 166309732, 127264, 1661, 1804984900, 18, 0))
+(value = nothing, time = 61.1972935, bytes = 8733836115, gctime = 1.8414196, gcstats = Base.GC_Diff(8733836115, 854, 52, 166434362, 127100, 1693, 1841419600, 22, 0))
 @timed stats next run:
-(value = nothing, time = 0.1613552, bytes = 104500061, gctime = 0.0, gcstats = Base.GC_Diff(104500061, 1, 0, 824267, 23, 0, 0, 0, 0))
+(value = nothing, time = 0.1930355, bytes = 104470517, gctime = 0.0, gcstats = Base.GC_Diff(104470517, 1, 0, 824106, 23, 0, 0, 0, 0))

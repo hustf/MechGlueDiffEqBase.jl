@@ -1,22 +1,22 @@
-2022-10-12 test_003.jl
-Test Summary:                 | Pass  Total  Time
-Initial checks ArrayPartition |    3      3  8.6s
+2022-10-15 test_003.jl
+Test Summary:                 | Pass  Total   Time
+Initial checks ArrayPartition |    3      3  10.8s
 Test Summary:       | Pass  Total     Time
-With ArrayPartition |    5      5  1m01.3s
+With ArrayPartition |    5      5  1m18.0s
 Test Summary:       | Pass  Total  Time
 zero ArrayPartition |    4      4  0.3s
 Test Summary:                   | Pass  Total     Time
-ArrayPartition with mixed units |   28     28  3m39.4s
+ArrayPartition with mixed units |   28     28  4m36.0s
 Test Summary:                 | Pass  Total  Time
-Initial checks ArrayPartition |    3      3  2.1s
+Initial checks ArrayPartition |    3      3  2.6s
 Test Summary:       | Pass  Total   Time
-With ArrayPartition |    5      5  43.0s
+With ArrayPartition |    5      5  54.2s
 Test Summary:       | Pass  Total  Time
 zero ArrayPartition |    4      4  0.0s
 Test Summary:                   | Pass  Total     Time
-ArrayPartition with mixed units |   28     28  3m03.1s
+ArrayPartition with mixed units |   28     28  3m49.8s
 
 @timed stats:
-(value = Test.DefaultTestSet("ArrayPartition with mixed units", Any[], 28, false, false, true, 1.665564581958e9, 1.665564801329e9), time = 290.0741329, bytes = 30111146878, gctime = 7.6528046, gcstats = Base.GC_Diff(30111146878, 14270, 84, 609769068, 496076, 15493, 7652804600, 87, 3))
+(value = Test.DefaultTestSet("ArrayPartition with mixed units", Any[], 28, false, false, true, 1.66582949679e9, 1.66582977275e9), time = 365.6860203, bytes = 29998537993, gctime = 8.1535168, gcstats = Base.GC_Diff(29998537993, 14274, 84, 608385057, 495426, 15911, 8153516800, 96, 4))
 @timed stats next run:
-(value = Test.DefaultTestSet("ArrayPartition with mixed units", Any[], 28, false, false, true, 1.665564846549e9, 1.665565029608e9), time = 228.2815945, bytes = 14418624071, gctime = 2.4194386, gcstats = Base.GC_Diff(14418624071, 9891, 78, 293156300, 223910, 10588, 2419438600, 30, 0))
+(value = Test.DefaultTestSet("ArrayPartition with mixed units", Any[], 28, false, false, true, 1.665829829708e9, 1.665830059541e9), time = 286.791735, bytes = 14408468351, gctime = 2.7650339, gcstats = Base.GC_Diff(14408468351, 9893, 78, 293030743, 223917, 10664, 2765033900, 48, 0))

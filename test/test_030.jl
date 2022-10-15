@@ -3,7 +3,6 @@ using Test
 using MechGlueDiffEqBase
 using MechGlueDiffEqBase: nlsolve, converged, MixedContent
 using MechanicalUnits: @import_expand, ∙
-using Logging
 import NLsolve
 
 @import_expand(cm, kg, s)

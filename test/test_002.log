@@ -1,22 +1,22 @@
-2022-10-12 test_002.jl
+2022-10-15 test_002.jl
 Test Summary:                    | Pass  Total  Time
-Unitful time with unitless state |    3      3  3.7s
+Unitful time with unitless state |    3      3  5.0s
 Test Summary: | Pass  Total   Time
-Scalar units  |   24     24  27.2s
+Scalar units  |   24     24  32.9s
 Test Summary: |   Time
-2D units      | None  1m03.4s
+2D units      | None  1m15.5s
 Test Summary:          | Pass  Total  Time
-Without ArrayPartition |    1      1  5.0s
+Without ArrayPartition |    1      1  6.0s
 Test Summary:                    | Pass  Total  Time
-Unitful time with unitless state |    3      3  2.6s
+Unitful time with unitless state |    3      3  3.2s
 Test Summary: | Pass  Total   Time
-Scalar units  |   24     24  21.1s
-Test Summary: | Time
-2D units      | None  55.9s
+Scalar units  |   24     24  25.1s
+Test Summary: |   Time
+2D units      | None  1m07.1s
 Test Summary:          | Pass  Total  Time
-Without ArrayPartition |    1      1  1.6s
+Without ArrayPartition |    1      1  1.8s
 
 @timed stats:
-(value = Test.DefaultTestSet("Without ArrayPartition", Any[], 1, false, false, true, 1.665564424926e9, 1.665564429926e9), time = 99.7823753, bytes = 12468488033, gctime = 2.3306951, gcstats = Base.GC_Diff(12468488033, 931, 50, 190560790, 210146, 2290, 2330695100, 81, 0))
+(value = Test.DefaultTestSet("Without ArrayPartition", Any[], 1, false, false, true, 1.665829303718e9, 1.665829309745e9), time = 120.2646901, bytes = 11883368886, gctime = 2.162983, gcstats = Base.GC_Diff(11883368886, 930, 50, 188605749, 210149, 2291, 2162983000, 79, 0))
 @timed stats next run:
-(value = Test.DefaultTestSet("Without ArrayPartition", Any[], 1, false, false, true, 1.665564509579e9, 1.665564511198e9), time = 81.2746451, bytes = 8578361763, gctime = 1.5122086, gcstats = Base.GC_Diff(8578361763, 788, 46, 133576095, 159122, 1907, 1512208600, 50, 0))
+(value = Test.DefaultTestSet("Without ArrayPartition", Any[], 1, false, false, true, 1.66582940515e9, 1.665829406991e9), time = 97.245062, bytes = 8285734787, gctime = 1.4038349, gcstats = Base.GC_Diff(8285734787, 784, 46, 132310237, 159123, 1894, 1403834900, 46, 0))

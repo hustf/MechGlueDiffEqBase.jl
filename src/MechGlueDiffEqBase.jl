@@ -46,8 +46,8 @@ import NLSolversBase: alloc_DF, OnceDifferentiable
 using NLSolversBase: f!_from_f, df!_from_df, fdf!_from_fdf, value_jacobian!!
 
 import NLsolve
-import NLsolve: trust_region, check_isfinite, converged
-using NLsolve: NewtonTrustRegionCache, dogleg!, nlsolve, assess_convergence
+import NLsolve: trust_region, check_isfinite, converged, nlsolve
+using NLsolve: NewtonTrustRegionCache, dogleg!, assess_convergence
 
 # TODO only export extended and defined functions and types?
 export value, ODE_DEFAULT_NORM, UNITLESS_ABS2, Quantity, FreeUnits

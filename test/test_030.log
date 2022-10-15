@@ -1,22 +1,22 @@
-2022-10-12 test_030.jl
+2022-10-15 test_030.jl
 Test Summary:      | Pass  Total  Time
-Utilities, NLsolve |    7      7  3.1s
-Test Summary:                      | Pass  Total  Time
-Newton trust region solve, Vectors |    6      6  8.1s
-Test Summary:                             | Pass  Total  Time
-Newton trust region solve, ArrayPartition |    6      6  8.1s
-Test Summary:                                         | Pass  Total  Time
-Newton trust region cache, ArrayPartition dimensional |   10     10  9.6s
+Utilities, NLsolve |    7      7  3.8s
+Test Summary:                      | Pass  Total   Time
+Newton trust region solve, Vectors |    6      6  10.0s
+Test Summary:                             | Pass  Total   Time
+Newton trust region solve, ArrayPartition |    6      6  10.0s
+Test Summary:                                         | Pass  Total   Time
+Newton trust region cache, ArrayPartition dimensional |   10     10  12.6s
 Test Summary:      | Pass  Total  Time
 Utilities, NLsolve |    7      7  0.0s
 Test Summary:                      | Pass  Total  Time
 Newton trust region solve, Vectors |    6      6  0.2s
 Test Summary:                             | Pass  Total  Time
-Newton trust region solve, ArrayPartition |    6      6  0.2s
+Newton trust region solve, ArrayPartition |    6      6  0.3s
 Test Summary:                                         | Pass  Total  Time
 Newton trust region cache, ArrayPartition dimensional |   10     10  0.3s
 
 @timed stats:
-(value = nothing, time = 28.9216309, bytes = 4620635737, gctime = 1.4405729, gcstats = Base.GC_Diff(4620635737, 666, 39, 81677036, 47414, 1426, 1440572900, 9, 1))
+(value = nothing, time = 36.5032748, bytes = 4603394471, gctime = 1.0766164, gcstats = Base.GC_Diff(4603394471, 669, 39, 81658266, 47470, 1009, 1076616400, 10, 0))
 @timed stats next run:
-(value = nothing, time = 0.7477769, bytes = 71870200, gctime = 0.0657085, gcstats = Base.GC_Diff(71870200, 1, 0, 1345446, 1750, 62, 65708500, 1, 0))
+(value = nothing, time = 0.8609678, bytes = 71840184, gctime = 0.0, gcstats = Base.GC_Diff(71840184, 1, 0, 1345183, 1750, 0, 0, 0, 0))

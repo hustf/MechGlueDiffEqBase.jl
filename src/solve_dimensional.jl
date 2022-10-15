@@ -62,4 +62,25 @@ We internally extract the captured variables of `bvloss` as fields:
 - `bvloss.bc`
 """
 
+
+# This captures calls from BoundaryValueDiffEq/src/algorithms.jl:10 DEFAULT_NLSOLVE
+# We capture this because, when initial_x contains quantities of the same type,
+# default calculated values of xtol, ftol and droptol 
+# would fail it's type checks in some cases. The values are checked to be <: Real, 
+# but that isn't true for quantities.
+# The default calculation includes: xtol = zero(real(eltype(initial_x)))
+# If all the dimension of 'initial_x' are identical, that returns a Quantity instead
+# of a Real.
+function nlsolve(f::Function,
+    initial_x::MixedCandidate)
+    method = :trust_region
+    autodiff = :central
+    inplace = !applicable(f, initial_x)
+    @assert mixed_array_trait(initial_x) isa VecMut
+    df = OnceDifferentiable(f, initial_x, copy(initial_x); autodiff=autodiff, inplace=inplace)
+    
+    # HARD CODED, first try. Todo: Fix.
+    @debug "nlsolve:88" string(initial_x)  inplace
+    nlsolve(df, initial_x; method = method,  xtol = 0.0, ftol = 1e-8, droptol = 1.0e10)
+    end
 nothing
