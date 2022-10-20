@@ -86,4 +86,12 @@ end
         end
     end
 end
+
+@testset "Stiff diffeq solver (test_n, 49 < n < 60)" begin
+    @testset "test: $test_file_name" for test_file_name in test_files
+        if 39 < filenumber(test_file_name) < 50
+            test_one_file(test_file_name)
+        end
+    end
+end
 nothing

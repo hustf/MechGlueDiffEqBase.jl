@@ -3,7 +3,7 @@
 # of vectors, matrices and transposed versions of these.
 # Informally, these are 'mixed' matrices and vectors.
 using Test
-using MechGlueDiffEqBase # exports ArrayPartition
+using MechGlueDiffEqBase
 using MechGlueDiffEqBase: determinant_dimension, determinant, mul!
 import MechanicalUnits
 using MechanicalUnits: @import_expand, ∙, ustrip, unit, 𝐋², 𝐋⁴, 𝐌³, 𝐓, NoDims, NoUnits

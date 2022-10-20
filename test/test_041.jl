@@ -2,7 +2,7 @@
 using Test
 import Logging
 using Logging: LogLevel, with_logger, ConsoleLogger
-using MechGlueDiffEqBase # exports ArrayPartition
+using MechGlueDiffEqBase
 using OrdinaryDiffEq
 using BoundaryValueDiffEq: BVProblem,  GeneralMIRK4, Shooting
 using MechanicalUnits: @import_expand, ∙, ustrip, unit
