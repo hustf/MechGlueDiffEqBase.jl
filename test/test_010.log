@@ -1,22 +1,22 @@
-2022-10-15 test_010.jl
+2022-10-23 test_010.jl
 Test Summary:                                                          | Pass  Total  Time
-A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  6.6s
+A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  6.1s
 Test Summary:                                                        | Pass  Total   Time
-A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  20.4s
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  14.1s
 Test Summary:                                                                  | Pass  Total  Time
-B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |   18     18  0.5s
+B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |   18     18  0.3s
 Test Summary:                                                                             | Pass  Total  Time
-C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  2.2s
+C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  1.4s
 Test Summary:                                                          | Pass  Total  Time
 A Mutable fixed-length mixed arrays - direct construction and printing |   91     91  0.2s
 Test Summary:                                                        | Pass  Total  Time
-A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  7.9s
+A Mutable fixed-length mixed arrays - Inferred broadcast and mapping |   89     89  5.0s
 Test Summary:                                                                  | Pass  Total  Time
 B Indexing, mutating, type guarantee - Direct construction, getindex, setindex |   18     18  0.0s
 Test Summary:                                                                             | Pass  Total  Time
 C More conversion / construction  - Back and forward conversion, alternative construction |   20     20  0.0s
 
 @timed stats:
-(value = nothing, time = 30.6236774, bytes = 3825038444, gctime = 0.6868875, gcstats = Base.GC_Diff(3825038444, 36, 0, 64846685, 27937, 760, 686887500, 10, 0))
+(value = nothing, time = 34.6563381, bytes = 6650172038, gctime = 1.6265217, gcstats = Base.GC_Diff(6650172038, 387, 0, 100547841, 37276, 1036, 1626521700, 85, 3))
 @timed stats next run:
-(value = nothing, time = 9.2006691, bytes = 986657566, gctime = 0.1889952, gcstats = Base.GC_Diff(986657566, 19, 0, 16853471, 11196, 147, 188995200, 3, 0))
+(value = nothing, time = 5.957441, bytes = 1127820615, gctime = 0.2061398, gcstats = Base.GC_Diff(1127820615, 18, 0, 17190498, 11227, 152, 206139800, 14, 0))
