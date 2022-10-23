@@ -1,9 +1,9 @@
 module MechGlueDiffEqBase
 # TODO: Don't import. Use!
 import Base: similar, inv, +, -, *, \
-import Base: show, summary, print, size, ndims
+import Base: show, summary, array_summary, print, size, ndims
 import Base: axes, copy, getindex, setindex!
-using Base: array_summary, throw_boundserror, setindex
+using Base: throw_boundserror, setindex, dims2string
 import Base.Iterators
 import Base.Iterators: zip
 import Base.Broadcast

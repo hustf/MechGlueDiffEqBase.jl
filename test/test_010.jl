@@ -3,9 +3,9 @@
 # may fit more naturally in a separate glue package or as PRs.
 #
 using Test
-using MechGlueDiffEqBase
 import MechanicalUnits
 using MechanicalUnits: @import_expand, ∙, DimensionError
+using MechGlueDiffEqBase
 using Base.Broadcast: BroadcastStyle, combine_styles, DefaultArrayStyle, Broadcasted
 import MechGlueDiffEqBase.RecursiveArrayTools
 using MechGlueDiffEqBase.RecursiveArrayTools: ArrayPartitionStyle, unpack
@@ -24,6 +24,7 @@ import LinearAlgebra
 
 @testset "A Mutable fixed-length mixed arrays - direct construction and printing" begin
     # n:dimensionless d: dimension, M: Matrix, V: Vector, E: empty, 0-3: size, i: immutable
+    # We skip the shortcut constructors here:
     E = ArrayPartition()
     Mn1 = ArrayPartition(ArrayPartition([1]))
     Mu1 = ArrayPartition(ArrayPartition([1kg]))
@@ -96,36 +97,36 @@ import LinearAlgebra
     @test mixed_array_trait(typeof(Vu3)) == VecMut()
     #
     shortp(x) = repr(x, context = :color=>true)
-    longp(x) = repr(:"text/plain", x, context = :color=>true)
-    # Note on 'replace' below: when this test is evaluated as in 'runtests.jl', RecursiveArrayTools.ArrayPartition is written including with originator's module name, hence 'replace'.
     sh(x) = replace(shortp(x), "RecursiveArrayTools." => "", "Unitfu." => "")
-    lo(x) = replace(longp(x), "RecursiveArrayTools." => "", "Unitfu." => "")
     @test sh(E) == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
-    @test lo(E) == "()\"#undef\""
     @test sh(E) == "ArrayPartition{Union{}, Tuple{}}(()\"#undef\")"
     @test sh(Mn1) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
-    @test lo(Mn1) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}}}}}:\n 1"
     @test sh( Mn1) == "\e[36mconvert_to_mixed(\e[39m[1;;]\e[36m)\e[39m"
     @test sh(Mn2) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
-    @test lo(Mn2) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}:\n 1  2\n 3  4"
     @test sh( Mn2) == "\e[36mconvert_to_mixed(\e[39m[1 2; 3 4]\e[36m)\e[39m"
     @test sh(Mu2)== "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
-    @test lo(Mu2)[1:80] == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Qu"
     @test sh( Mu2) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m; 3\e[36ms\e[39m 4\e[36mkg\e[39m]\e[36m)\e[39m"
     @test sh(Mn3) == "\e[36mconvert_to_mixed(\e[39m[1 2 3; 4 5 6; 7 8 9]\e[36m)\e[39m"
-    @test lo(Mn3) == "\e[36mMatrixMixed as \e[39mArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}, Vector{Int64}}}}}:\n 1  2  3\n 4  5  6\n 7  8  9"
     @test sh(Mu3) =="\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
-    @test lo(Mu3)[1:80] == "\e[36mMatrixMixed as \e[39mArrayPartition{Quantity{Int64}, Tuple{ArrayPartition{Qu"
     @test sh( Mu3) == "\e[36mconvert_to_mixed(\e[39m[1\e[36mkg\e[39m 2\e[36ms\e[39m 3\e[36mkg\e[39m; 4\e[36ms\e[39m 5\e[36mkg\e[39m 6\e[36ms\e[39m; 7\e[36mkg\e[39m 8\e[36ms\e[39m 9\e[36mkg\e[39m∙\e[36ms\e[39m]\e[36m)\e[39m"
     @test sh(Mn3x2)[1:80] == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{In"
-    @test lo(Mn3x2) == "(\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6))"
     @test sh( Mn3x2) == "ArrayPartition{Int64, Tuple{ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}, ArrayPartition{Int64, Tuple{Vector{Int64}, Vector{Int64}}}}}((\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6)))"
     @test sh(Vn1)== "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
     @test sh( Vn1) == "\e[36mSingle-element mutable matrix (discouraged) \e[39mArrayPartition(ArrayPartition([1.0]))"
-    @test lo(Vn1) == "Single-element (discouraged) ArrayPartition(ArrayPartition(Vector{<:Number})):\n 1.0"
     @test sh(Vu3) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
-    @test lo(Vu3) == "3-element mutable ArrayPartition:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n                3.0"
     @test sh(Vu3) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
+    # Note on 'replace' below: when this test is evaluated as in 'runtests.jl', RecursiveArrayTools.ArrayPartition is written including with originator's module name, hence 'replace'.
+    longp(x) = repr(:"text/plain", x, context = :color=>true)
+    lo(x) = replace(longp(x), "RecursiveArrayTools." => "", "Unitfu." => "")
+    @test lo(E) == "()\"#undef\""
+    @test lo(Mn1) == lo(Mn1) == "1×1 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1"
+    @test  lo(Mn2) == "2×2 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1  2\n 3  4"
+    @test lo(Mu2) == "2×2 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m\n  3\e[36ms\e[39m  4\e[36mkg\e[39m"
+    @test lo(Mn3) == lo(Mn3) == "3×3 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1  2  3\n 4  5  6\n 7  8  9" == "3×3 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1  2  3\n 4  5  6\n 7  8  9"
+    @test lo(Mu3)[1:100] == "3×3 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}"
+    @test lo(Mn3x2) == "(\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6))"
+    @test lo(Vn1) == "1-element \e[36m⊲ Single \e[39mArrayPartition{Float64, Tuple{Vector{Float64}}}:\n 1.0"
+    @test lo(Vu3) == "3-element \e[36m⊲ VecMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n 3.0"
     @test @inferred(transpose(Mn1)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Mu1)) isa LinearAlgebra.Transpose
     tMn2 = transpose(Mn2)
@@ -138,7 +139,7 @@ import LinearAlgebra
     @test @inferred(transpose(Mn3x2)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Vn1)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Vu3)) isa LinearAlgebra.Transpose
-    # Coverage of print
+    # Coverage of print without errors
     iob = IOBuffer()
     println(iob, E)
     println(iob, Mn1)
@@ -310,6 +311,7 @@ end
     @test map((x,y) -> x * y * kg, Mu2, Mu2a) == [1kg³ 4kg; 9kg 16kg∙cm²]
     @test map((x,y) -> x * y * kg, Mu2, Mu2a) == [1kg³ 4kg; 9kg 16kg∙cm²]
 end
+
 ######################################
 # B Indexing, mutating, type guarantee
 ######################################

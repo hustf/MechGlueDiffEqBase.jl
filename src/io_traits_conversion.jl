@@ -301,21 +301,39 @@ Base.show(io::IO, ::Union{NotMixed, Empty}, A::MixedCandidate) = invoke(show, Tu
 
 
 
-#########################################################
-# Decorated (human readable) representation, trait based.
-#########################################################
-summary(io::IO, A::MixedCandidate) = summary(io, mixed_array_trait(A), A)
-# Fallback, same as Base/show.jl:2803
-summary(io::IO, ::NotMixed, A::AbstractArray) = array_summary(io, A, axes(A))
-function summary(io::IO, ::MatSqMut, A)
+##############################################
+# Decorated (human readable but not parseable) 
+# representation, trait based
+##############################################
+
+# We extend 'Base.summary' because extending 'Base.array_summary' would be ambiguous.
+summary(io::IO, A::MixedCandidate) = _summary(io, mixed_array_trait(A), A)
+# Fallback, MixedCandidate spanned too wide.
+_summary(io::IO, ::NotMixed, A::AbstractArray) = invoke(array_summary, Tuple{typeof(io), Any}, io, v)
+# Mixed vectors, matrices, singles:
+_summary(io::IO, t::Mixed, a) = _array_summary(io, t, a, axes(a))
+
+function trait_summary(io, t::Mixed)
     col = get(io, :unitsymbolcolor, :cyan)
-    printstyled(io, color = col, "MatrixMixed as ")
-    print(io, typeof(A))
+    printstyled(io, color = col, "⊲ ", typeof(t), " ")
+end
+function _array_summary(io::IO, t::Mixed, a, inds::Tuple{Vararg{Base.OneTo}})
+    print(io, Base.dims2string(length.(inds)), " ")
+    trait_summary(io, t)
+    # Should we display the full type info?
+    sz = Base.displaysize(io)::Tuple{Int,Int}
+    remainwidth = sz[2]  - 1 - 5 - 10 # margin, size, trait string
+    typelength = Base.alignment(io, typeof(a))[2]
+    if typelength < remainwidth
+        print(io, typeof(a))
+    else
+        printstyled(io, "(alias:) "; color = :light_black)
+        print(io, "ArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}")
+    end
     nothing
 end
-Base.summary(io::IO, ::VecMut, ::RW(N)) where {N} = print(io, "$N-element mutable ArrayPartition")
-Base.summary(io::IO, ::Single, X) = print(io, "Single-element (discouraged) ArrayPartition(ArrayPartition(Vector{<:Number}))")
-
+# We extend 'Base.show' because RecursiveArrayTools already does that, and in a rough way..
+# Otherwise, we wouldn't have to extend.
 Base.show(io::IO, m::MIME"text/plain", A::MixedCandidate) = Base.show(io, m, mixed_array_trait(A), A)
 function Base.show(io::IO, ::MIME"text/plain", ::MatSqMut, A::MixedCandidate)
     # 0) show summary before setting :compact
@@ -384,8 +402,6 @@ function Base.show(io::IO, m::MIME"text/plain", ::Single, X)
     recur_io = IOContext(io, :SHOWN_SET => X)
     Base.print_array(recur_io, X)
 end
-
-
 
 # Fallback, same as \RecursiveArrayTools\tU7uv\src\array_partition.jl:248
 Base.show(io::IO, m::MIME"text/plain", ::Union{NotMixed, Empty}, A::MixedCandidate) = show(io, m, A.x)
