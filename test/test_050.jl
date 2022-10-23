@@ -7,8 +7,6 @@ using MechanicalUnits: @import_expand, ∙, ustrip, unit
 
 using OrdinaryDiffEq
 #using MechanicalUnits: preferunits, upreferred
-
-
 # Original, from https://tutorials.sciml.ai/stable/advanced/02-advanced_ODE_solving/
 function rober(du,u,p,t)
     y₁,y₂,y₃ = u
@@ -18,8 +16,10 @@ function rober(du,u,p,t)
     du[3] =  k₂*y₂^2
     du
 end
-
-prob = ODEProblem(rober,[1.0,0.0,0.0],(0.0,1e5),(0.04,3e7,1e4))
+x₀ = [1.0,0.0,0.0]
+p = [0.04,3e7,1e4]
+tspan = (0.0,1e5)
+prob = ODEProblem(ODEFunction(rober),x₀,tspan,p)
 sol1 = @time solve(prob,Rosenbrock23())  # 3.434848 seconds (8.37 M allocations: 670.196 MiB, 3.96% gc time, 99.95% compilation time)
 using BenchmarkTools
 @btime solve(prob,Rosenbrock23()); #   57.600 μs (442 allocations: 39.19 KiB)
@@ -28,7 +28,10 @@ np = length(sol1)
 @test size(sol1.k) == (np,)
 @test size(sol1.k[1]) == (1,)
 @test size(sol1.k[1][1]) == (3,)
+@test sol1.k[1][1] isa Vector{Float64}
+
 @test sol1.destats.nf == 243
+# We supply the analytical Jacobian:
 function rober_jac(J,u,p,t)
     y₁,y₂,y₃ = u
     k₁,k₂,k₃ = p
@@ -42,22 +45,59 @@ function rober_jac(J,u,p,t)
     J[2,3] = k₃ * y₂ * -1
     J[3,3] = 0
     nothing
-  end
+end
 f = ODEFunction(rober, jac=rober_jac)
-prob_jac = ODEProblem(f,[1.0,0.0,0.0],(0.0,1e5),(0.04,3e7,1e4))
-sol2 = @btime solve(prob_jac, Rosenbrock23()); #   47.300 μs (355 allocations: 32.45 KiB)
-# We provided the analytical Jacobian, but values are stored in the same manner as above:
+prob = ODEProblem(f,x₀,tspan,p)
+sol2 = @btime solve(prob, Rosenbrock23()); #   47.300 μs (355 allocations: 32.45 KiB)
+# We provided the analytical Jacobian. This was marginally faster, but values are stored in the 
+# same manner as above:
 np = length(sol2)
 @test size(sol2.k) == (np,)
 @test size(sol2.k[1]) == (1,)
 @test size(sol2.k[1][1]) == (3,)
 @test sol2.destats.nf == 183
+@test sol2.k[1][1] isa ArrayPartition # x₀ is a normal vector, but this is the chosen 
+                                        #structure when we supply an analytical Jacobian function
+# Use ArrayPartition as a preparation for using physical dimensions. This is a good deal slower without further adaptions:
+x₀ = convert_to_mixed(1.0,0.0,0.0)
+p = convert_to_mixed(0.04,3e7,1e4)
 
-# Use ArrayPartition as a preparation for using physical dimensions. This is a good deal slower without further adaptions.
-prob = ODEProblem(rober,convert_to_mixed(1.0,0.0,0.0), (0.0,1e5), convert_to_mixed(0.04,3e7,1e4))
-@btime solve(prob,Rosenbrock23()); #   259.900 μs (985 allocations: 76.17 KiB)
-prob_jac = ODEProblem(f,convert_to_mixed(1.0,0.0,0.0),(0.0,1e5),convert_to_mixed(0.04,3e7,1e4))
-sol_jac = @btime solve(prob_jac, Rosenbrock23()); #   47.300 μs (355 allocations: 32.45 KiB)
+prob = ODEProblem(rober,x₀, (0.0,1e5), p)
+sol3 = @btime solve(prob,Rosenbrock23()); #   259.900 μs (985 allocations: 76.17 KiB)
+prob = ODEProblem(f, x₀,(0.0,1e5), p)
+sol4 = @btime solve(prob, Rosenbrock23()); #   47.300 μs (355 allocations: 32.45 KiB)
+@test size(sol4.k) == (np,)
+@test size(sol4.k[1]) == (1,)
+@test size(sol4.k[1][1]) == (3,)
+@test sol4.destats.nf == 183
 
-# Provide a placeholder for the Jacobian
-Jp = jacobian_prototype_nan(x::MixedCandidate, vecfx::MixedCandidate)
+# Write own Jacobian function using FiniteDiff!
+function diy_jac(J,u,p,t)
+    @debug string(J)
+    throw("Ha! First call")
+end
+fnl = NonlinearFunction(f, Jp....??)
+f = ODEFunction(rober, jac=diy_jac)
+prob = ODEProblem(rober,x₀, (0.0,1e5), p)
+
+# Provide a placeholder for the Jacobian (not working)
+#=
+Jp = jacobian_prototype_nan(x₀, rober(x₀, x₀, p, :t))
+f = ODEFunction(rober)
+prob = ODEProblem(f, x₀,(0.0,1e5), p)
+solver = Rodas5(autodiff=Val(false), diff_type = Val(:central), concrete_jac = Val(true))
+# That solver didn't quite fit. Let's try with a less complicated solver.
+solver = Tsit5()
+solve(prob, solver, wrap = Val(false))
+=#
+
+
+
+
+
+sol5 = @time solve(prob, solver) #  
+np = length(sol5)
+@test size(sol5.k) == (np,)
+@test size(sol5.k[1]) == (1,)
+@test size(sol5.k[1][1]) == (3,)
+@test sol5.destats.nf == 183
