@@ -117,15 +117,19 @@ import LinearAlgebra
     @test sh(Vu3) == "\e[36m3-element mutable \e[39mArrayPartition(1.0\e[36ms⁻¹\e[39m, 2.0\e[36ms⁻²\e[39m, 3.0)"
     # Note on 'replace' below: when this test is evaluated as in 'runtests.jl', RecursiveArrayTools.ArrayPartition is written including with originator's module name, hence 'replace'.
     longp(x) = repr(:"text/plain", x, context = :color=>true)
-    lo(x) = replace(longp(x), "RecursiveArrayTools." => "", "Unitfu." => "")
+    lo(x) = replace(longp(x), "RecursiveArrayTools." => "", "Unitfu." => "", "MechGlueDiffEqBase." => "")
     @test lo(E) == "()\"#undef\""
-    @test lo(Mn1) == lo(Mn1) == "1×1 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1"
+    @test lo(Mn1) == "1×1 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1"
     @test  lo(Mn2) == "2×2 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1  2\n 3  4"
     @test lo(Mu2) == "2×2 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1\e[36mkg\e[39m   2\e[36ms\e[39m\n  3\e[36ms\e[39m  4\e[36mkg\e[39m"
-    @test lo(Mn3) == lo(Mn3) == "3×3 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1  2  3\n 4  5  6\n 7  8  9" == "3×3 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1  2  3\n 4  5  6\n 7  8  9"
+    @test lo(Mn3) == "3×3 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1  2  3\n 4  5  6\n 7  8  9" == "3×3 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1  2  3\n 4  5  6\n 7  8  9"
     @test lo(Mu3)[1:100] == "3×3 \e[36m⊲ MatSqMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}"
     @test lo(Mn3x2) == "(\e[36m2-element mutable \e[39mArrayPartition(1, 2), \e[36m2-element mutable \e[39mArrayPartition(3, 4), \e[36m2-element mutable \e[39mArrayPartition(5, 6))"
-    @test lo(Vn1) == "1-element \e[36m⊲ Single \e[39mArrayPartition{Float64, Tuple{Vector{Float64}}}:\n 1.0"
+    @test begin
+        ex1 = (lo(Vn1) == "1-element \e[36m⊲ Single \e[39mArrayPartition{Float64, Tuple{Vector{Float64}}}:\n 1.0")
+        ex2 = (lo(Vn1) == "1-element \e[36m⊲ Single \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1.0")
+        ex1 || ex2
+    end
     @test lo(Vu3) == "3-element \e[36m⊲ VecMut \e[39m\e[90m(alias:) \e[39mArrayPartition{<:Number, <:NTuple{N, Union{RW(N), E}}}:\n 1.0\e[36ms⁻¹\e[39m\n 2.0\e[36ms⁻²\e[39m\n 3.0"
     @test @inferred(transpose(Mn1)) isa LinearAlgebra.Transpose
     @test @inferred(transpose(Mu1)) isa LinearAlgebra.Transpose

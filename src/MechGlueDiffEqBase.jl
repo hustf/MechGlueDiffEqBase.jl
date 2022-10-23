@@ -58,7 +58,7 @@ export MixedCandidate, convert_to_array, JacobianCache
 export numtype, alloc_DF, mixed_array_trait, convert_to_mixed
 export MatSqMut, VecMut, NotMixed, NotMixed, Single, Empty
 export is_square_matrix_mutable, is_vector_mutable_stable
-export OnceDifferentiable, check_isfinite
+export OnceDifferentiable, check_isfinite, VecMut, MatSqMut, Single
 
 
 # The file "io_traits_conversion.jl" defines, by traits, 
