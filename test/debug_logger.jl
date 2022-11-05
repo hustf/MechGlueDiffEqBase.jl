@@ -33,4 +33,8 @@ function locfmt(level::LogLevel, _module, group, id, file, line)
     !isempty(suffix) && (suffix = "@ " * suffix)
     return color, prefix, suffix
 end
+function s_summary(x;colorbol = false)
+    context = IOContext(stderr, :color => colorbol)
+    sprint(Base.summary, x;context)
+end
 nothing
